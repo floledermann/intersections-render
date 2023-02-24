@@ -1,0 +1,532 @@
+<!doctype html>
+<head>
+<title>Line intersection test</title>
+<link rel="icon" href="data:,">
+<style>
+html {
+  background-color: #000000;
+  color: #ffffff;
+  font-size: 12px;
+}
+
+select {
+  font-size: 12px;
+}
+
+h2 {
+  margin: 5px 0;
+}
+
+.hblock {
+  display: inline-block;
+  vertical-align: top;
+  border: 1px solid #fff;
+  border-radius: 5px;
+  padding: 5px;
+  margin: 5px;
+}
+
+.vblock {
+  display: block;
+  border: 1px solid #fff;
+  border-radius: 5px;
+  padding: 5px;
+  margin: 5px 0;
+}
+
+svg {
+  margin: 5px;
+}
+
+button {
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<section id="ui-wrapper">
+</section>
+
+<section id="viz-wrapper">
+</section>
+
+<template id="streetSettingsGUI">
+<div class="streetUI hblock">
+  <h2>StreetName</h2>
+  <div>
+    <label for="angle">Angle</label>
+    <input type="range" id="angle" name="angle" min="-180" max="180">
+    <span class="value"></span> °
+  </div>
+  <div class="lanesWrapper">
+  </div>
+  <div>
+    <button name="addLane" title="Add lane">+</button>
+  </div>
+</div>
+</template>
+
+<template id="laneSettingsGUI">
+<div class="laneUI vblock">
+  <div>
+    <label for="type">Type</label>
+    <select id="type" name="type"></select>
+    <button name="deleteLane" title="Delete lane">-</button>
+  </div>
+  <div>
+    <label for="width">Width</label>
+    <input type="range" id="width" name="width" min="1" max="100">
+    <span class="value"></span> px
+  </div>
+</div>
+</template>
+
+<script type="module">
+
+import { vMult, vAdd, vSub, vLen, vUnit, 
+         intersect, intersectDist, tangentPoints, 
+         degRad, radDeg,
+         normalizeAngle, normalizeAngle180, normalizeAngle90 } from "./vecMath.js";
+
+let laneTypes = {
+  "car": {
+    label: "Lane for cars",
+    options: [
+      { name: "width", type: "integer", defaultValue: 30 },
+      { name: "curb", type: "boolean", defaultValue: false },
+      { name: "paint", type: "boolean", defaultValue: true },
+      { name: "direction", choices: ["forward", "backward", "both"], defaultValue: "forward" },
+    ]
+  },
+  "car-access": {
+    label: "Car access (e.g. garage)",
+    options: [
+      { name: "width", type: "integer", defaultValue: 20 },
+    ]
+  },
+  "pedestrian": {
+    label: "Pedestrian (e.g. sidewalk)",
+    options: [
+      { name: "width", type: "integer", defaultValue: 15 },
+    ]
+  },
+  "cycle": {
+    label: "Cycling (dedicated)",
+    options: [
+      { name: "width", type: "integer", defaultValue: 20 },
+      { name: "surface", 
+        choices: ["asphalt","concrete","paving_stones","cobblestone","gravel","ground"], 
+        defaultValue: "asphalt" 
+      },
+      { name: "smoothness", choices: ["excellent","good","intermediate","bad"] },
+    ]
+  },
+  "cycle-shared": {
+    label: "Cycling (shared with cars)",
+    options: [
+      { name: "width", type: "integer", defaultValue: 15 },  // width depends on type
+    ]
+  },
+  "parking": {
+    label: "Parking",
+    options: [
+      { name: "width", type: "integer", defaultValue: 30 },  // width depends on type
+      { name: "type", choices: ["parallel","diagonal","orthogonal"], defaultValue: "parallel" },
+    ]
+  },
+  "green": {
+    label: "Grass",
+    options: [
+      { name: "width", type: "integer", defaultValue: 30 },  // width depends on type
+    ]
+    
+  },
+  "bus": {
+    label: "Bus",
+    options: [
+      { name: "width", type: "integer", defaultValue: 40 },
+    ]
+  },
+  // what about shared tram?
+  "tram": {
+    label: "Tram / rail",
+    options: [
+      { name: "width", type: "integer", defaultValue: 30 },
+    ]
+  }
+}
+
+// extract default vlues into a simple dict structure
+let laneDefaults = 
+  Object.fromEntries(
+    Object.entries(laneTypes).map(
+      ([laneType, laneProps]) => [laneType, 
+        Object.fromEntries(
+          (laneProps.options || []).map(
+            options => [options.name, options.defaultValue]
+          )
+        )
+      ]
+    )
+  );
+
+let lanePriorities = [
+  "rail",
+  "car",
+  "cycle",
+  "pedestrian",
+  "car-access",
+  "green",
+  "parking",
+  // what to do with bus and tram
+];
+
+let state = {
+  settings: {
+  },
+  streets: [
+    {
+      angle: -22,
+      lanes: [
+        {
+          type: "pedestrian",
+          curb: true,
+          boundary: "building",
+        },
+        {
+          type: "parking",
+          paint: true,
+          orientation: "parallel"
+        },
+        {
+          type: "car",
+          paint: true,
+          direction: "backward",
+        },          
+        {
+          type: "car",
+          paint: true,
+          direction: "forward",
+        },          
+        {
+          type: "parking",
+          paint: true,
+          orientation: "diagonal",
+        },
+        {
+          type: "cycle",
+          curb: true,
+          color: "red",
+          oneway: false
+        },
+      ],
+    },
+    {
+      angle: 180,
+      lanes: [
+        {
+          type: "pedestrian",
+          curb: true,
+          boundary: "building",
+          curbHeight: 15,
+        },
+        {
+          type: "parking",
+          paint: true,
+          orientation: "parallel"
+        },
+        {
+          type: "car",
+          paint: true,
+          direction: "backward",
+        },          
+        {
+          type: "car",
+          paint: true,
+          direction: "forward",
+        },          
+        {
+          type: "parking",
+          paint: true,
+          orientation: "diagonal",
+        },
+        {
+          type: "cycle",
+          curb: true,
+          color: "red",
+          oneway: false
+        },
+      ],
+    },
+    {
+      angle: 90,
+      lanes: [
+        {
+          type: "pedestrian",
+          curb: true,
+          boundary: "building",
+          curbHeight: 15,
+        },
+        {
+          type: "car",
+          paint: true,
+          direction: "backward",
+        },          
+        {
+          type: "parking",
+          paint: true,
+          orientation: "diagonal",
+        },
+        {
+          type: "pedestrian",
+          curb: true,
+          boundary: "building",
+          curbHeight: 15,
+        },
+      ],
+    },
+    {
+      angle: 260,
+      lanes: [
+        {
+          type: "pedestrian",
+          curb: true,
+          boundary: "building",
+          curbHeight: 15,
+        },
+        {
+          type: "car",
+          paint: true,
+          direction: "backward",
+        },          
+        {
+          type: "parking",
+          paint: true,
+          orientation: "diagonal",
+        },
+        {
+          type: "pedestrian",
+          curb: true,
+          boundary: "building",
+          curbHeight: 15,
+        },
+      ],
+    },
+  ],
+  visualizations: [
+    { 
+      width: 600,
+      height: 600,
+      algorithm: "test1"
+    },
+    //{ algorithm: "test1" }
+  ]
+}
+
+const svgNS = "http://www.w3.org/2000/svg";
+  
+function svgEl(tagName, attributes, parent) {
+  let el = document.createElementNS(svgNS, tagName);
+  for (let [n,v] of Object.entries(attributes)) {
+    el.setAttribute(n, v);
+  }
+  if (parent) {
+    parent.appendChild(el);
+  }
+  return el;
+}
+  
+let algorithms = {
+  test1: {
+    generate: function(wrapper, state) {
+    
+      let streetsGeom = [];
+      for (let street of state.streets) {
+        let geom = {
+          angle: street.angle,
+          end: [0,0],
+          length: street.length || 280,
+          lanesGeom: [],
+          street: street,
+          invalid: false,
+        };
+        geom.start = [
+          -geom.length * Math.cos(degRad(geom.angle)),
+          -geom.length * Math.sin(degRad(geom.angle))
+        ];
+        geom.vector = vSub(geom.end, geom.start);
+        geom.unit = vMult(geom.vector, 1/geom.length);
+        geom.normal = [geom.unit[1], -geom.unit[0]];
+        
+        
+        // figure out relationship of other streets
+        // order by angle, check if left, continuation or right
+        let otherStreets = [];
+        for (let s of state.streets) {
+          if (s == street) continue;
+          let relAngle = normalizeAngle(s.angle - street.angle);
+          let rel = (relAngle < 45 || relAngle > 315) ? "invalid" :
+                    (relAngle >= 45 && relAngle < 135) ? "left" :
+                    (relAngle >= 135 && relAngle < 225) ? "continuation" :
+                    "right";
+          if (rel == "invalid") {
+            console.warn("Invalid crossing angle: " + relAngle + "°");
+            geom.invalid = true;
+          }
+
+          otherStreets.push({
+            rel,
+            relAngle,
+            street: s
+          });
+        }
+        otherStreets.filter(a => a.rel != "invalid")
+        otherStreets.sort((a,b) => a.relAngle-b.relAngle);
+
+        geom.otherStreets = otherStreets;
+        
+        let width = 0;
+        
+        for (let lane of street.lanes) {
+          let laneDef = Object.assign({}, laneDefaults[lane.type], lane);
+          width += laneDef.width || 20;
+        }
+        
+        geom.width = width;
+        
+        streetsGeom.push(geom);
+      }
+
+
+
+      
+      for (let geom of streetsGeom) {
+        svgEl("circle", {r: 5, cx: geom.start[0], cy: geom.start[1], fill: "#f00"}, wrapper);
+        svgEl("circle", {r: 5, cx: geom.end[0], cy: geom.end[1], fill: "#f00"}, wrapper);
+        svgEl("rect", {
+          transform: `translate(${geom.start.join(",")}) rotate(${geom.angle})`,
+          x: 0,
+          y: -geom.width/2,
+          height: geom.width,
+          width: geom.length,
+          fill: "none",
+          "stroke": geom.invalid ? "#ff0000" : "#000000",
+          "stroke-width": geom.invalid ? 2 : 0.5,
+          "stroke-dasharray": "6 5"
+        }, wrapper);
+        
+      }
+      
+    }
+  },
+  test2: {
+  }
+}
+
+function buildUI(state, wrapper, update) {
+
+  function wireSliders(wrapper, data, update) {
+  
+    for (let slider of wrapper.querySelectorAll("input[type=range]")) {
+
+      slider.value = data[slider.name];
+
+      let valEl = slider.parentElement.querySelector(".value");
+      if (valEl) {
+        valEl.textContent = slider.value;
+        slider.addEventListener("input", e => valEl.textContent = e.target.value);
+        if (update) slider.addEventListener("input", e => update(e.target.name, e.target.value));
+      }
+    }
+ }
+
+  let streetUiTemplate = document.getElementById("streetSettingsGUI").content.firstElementChild;
+  let laneUiTemplate = document.getElementById("laneSettingsGUI").content.firstElementChild;
+
+  for (let street of state.streets) {
+  
+    let streetUI = streetUiTemplate.cloneNode(true);
+    wrapper.appendChild(streetUI);
+    
+    let lanesWrapper = streetUI.querySelector(".lanesWrapper");
+
+    wireSliders(streetUI, street, (name, val) => {street[name] = +val; update(state)});
+        
+    for (let lane of street.lanes) {
+    
+      Object.assign(lane, laneDefaults[lane.type], lane);
+    
+      let laneUI = laneUiTemplate.cloneNode(true);
+      lanesWrapper.appendChild(laneUI);
+      
+      wireSliders(laneUI, lane, (name, val) => {lane[name] = +val; update(state)});
+    
+      let sel = laneUI.querySelector("#type");
+      for (let [type, options] of Object.entries(laneTypes)) {
+        let option = document.createElement("option");
+        option.value = type;
+        option.textContent = options.label;
+        if (type == lane.type) option.selected = true;
+        sel.appendChild(option);
+      }
+    }
+  }
+  
+  return function updateUI(newState) {
+  }
+
+}
+
+function buildSVG(state, wrapper, update) {
+
+  let svgs = [];
+
+  for (let viz of state.visualizations) {
+  
+    let width = viz.width || 500;
+    let height = viz.height || 500;
+  
+    let svg = svgEl("svg", {
+      width: width,
+      height: height,
+      viewBox: `${-width/2} ${-height/2} ${width} ${height}`,
+      fill: "#ffffff"
+    }, wrapper);
+    
+    svgEl("rect", {
+      x: "-50%",
+      y: "-50%",
+      width: "100%",
+      height: "100%",
+      fill: "#ffffff"
+    }, svg);
+    
+    let vizWrapper = svgEl("g", {"class":"viz"}, svg);
+    
+    svgs.push(vizWrapper);
+    
+  }
+  
+  return function updateSVG(state) {
+    
+    let i=0;
+    
+    for (let viz of state.visualizations) {
+      svgs[i].innerHTML = "";
+      algorithms[viz.algorithm].generate(svgs[i], state);
+      i++;
+    }
+  }
+}
+
+let updateSVG = buildSVG(state, document.getElementById("viz-wrapper"));
+
+updateSVG(state);
+
+let updateUI = buildUI(state, document.getElementById("ui-wrapper"), updateSVG);
+
+</script>
+
+</body>
+</html>
