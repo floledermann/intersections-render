@@ -341,6 +341,9 @@ let algorithms = {
   test1: {
     generate: function(wrapper, state) {
     
+      const INVALID_CUTOFF_ANGLE = 43;
+      const STRAIGHT_ANGLE = 45;
+    
       let streetsGeom = [];
       for (let street of state.streets) {
         let geom = {
@@ -361,14 +364,14 @@ let algorithms = {
         
         
         // figure out relationship of other streets
-        // order by angle, check if left, continuation or right
+        // order by angle, check if left, straight continuation or right
         let otherStreets = [];
         for (let s of state.streets) {
           if (s == street) continue;
           let relAngle = normalizeAngle(s.angle - street.angle);
-          let rel = (relAngle < 45 || relAngle > 315) ? "invalid" :
-                    (relAngle >= 45 && relAngle < 135) ? "left" :
-                    (relAngle >= 135 && relAngle < 225) ? "continuation" :
+          let rel = (relAngle <= INVALID_CUTOFF_ANGLE || relAngle >= 360 - INVALID_CUTOFF_ANGLE) ? "invalid" :
+                    (relAngle >= STRAIGHT_ANGLE && relAngle <= 180 - STRAIGHT_ANGLE) ? "left" :
+                    (relAngle >= 180 - STRAIGHT_ANGLE && relAngle <= 180 + STRAIGHT_ANGLE) ? "straight" :
                     "right";
           if (rel == "invalid") {
             console.warn("Invalid crossing angle: " + relAngle + "°");
@@ -378,7 +381,7 @@ let algorithms = {
           otherStreets.push({
             rel,
             relAngle,
-            street: s
+            streetGeom: geom
           });
         }
         otherStreets.filter(a => a.rel != "invalid")
@@ -386,35 +389,116 @@ let algorithms = {
 
         geom.otherStreets = otherStreets;
         
-        let width = 0;
+        let streetWidth = 0;
         
         for (let lane of street.lanes) {
+          // store basic lane geometry
           let laneDef = Object.assign({}, laneDefaults[lane.type], lane);
-          width += laneDef.width || 20;
+          let laneWidth = laneDef.width || 20;
+          
+          geom.lanesGeom.push({
+            width: laneWidth,
+            offset: streetWidth,
+            lane: lane
+          });
+          
+          streetWidth += laneWidth;
         }
         
-        geom.width = width;
+        geom.width = streetWidth;
+        
+        for (let laneGeom of geom.lanesGeom) {
+          // start left, check clockwise with other streets
+          laneGeom.offset -= streetWidth/2;
+        }
         
         streetsGeom.push(geom);
       }
-
-
-
+      // first pass finished 
+      //   - relative street angles
+      //   - angle classification (left, stright, right, invalid)
+      //   - lane y' position
       
-      for (let geom of streetsGeom) {
-        svgEl("circle", {r: 5, cx: geom.start[0], cy: geom.start[1], fill: "#f00"}, wrapper);
-        svgEl("circle", {r: 5, cx: geom.end[0], cy: geom.end[1], fill: "#f00"}, wrapper);
+      // assumption: each lane has only one continuation in each other street
+
+      // second pass:
+      //   - establish lanes x' end
+      for (let sGeom of streetsGeom) {
+        let firstLeft = sGeom.otherStreets[0];
+        if (firstLeft.rel != "left") firstLeft = null;
+        let firstRight = sGeom.otherStreets[sGeom.otherStreets.length-1]
+        if (firstRight.rel != "right") firstRight = null;
+        let continuationStreets = sGeom.otherStreets;
+        for (let lGeom of sGeom.lanesGeom) {
+          let { laneGeom, streetRel, stop } = findContinuationOrStop(lGeom, continuationStreets);
+          
+          // subsequent lanes continue from same street or further clockwise
+          continuationStreets = sGeom.otherStreets.slice(sGeom.otherStreets.indexOf(streetRel));
+          
+          if (stop) {
+            lGeom.endX = -100;
+          }
+          else {
+            lGeom.endX = 0;
+          }
+          
+        }
+      }
+      
+      // returns { laneGeom, streetRel, stop}
+      function findContinuationOrStop(laneGeom, otherStreets) {
+      
+        for (let otherStreetRel of otherStreets) {
+          let otherLanes = otherStreetRel.streetGeom.lanesGeom;
+          // make copy and reverse order if not left turn
+          if (otherStreetRel.rel != "left") Array.from(otherLanes).reverse();
+          for (let otherLaneGeom of otherLanes) {
+            if (laneGeom.lane.type == otherLaneGeom.lane.type) {
+              return { laneGeom: otherLaneGeom, streetRel: otherStreetRel, stop: false }
+            }
+            if (lanePriorities.indexOf(laneGeom.lane.type) > lanePriorities.indexOf(otherLaneGeom.lane.type)) {
+              return { laneGeom: otherLaneGeom, streetRel: otherStreetRel, stop: true }
+            }
+          }
+        }
+        // should this ever happen?
+        throw "Neither continuation nor stop lane found";
+        return { laneGeom: null, streetRel: null, stop: true }
+      }
+      
+      for (let sGeom of streetsGeom) {
+        svgEl("circle", {r: 5, cx: sGeom.start[0], cy: sGeom.start[1], fill: "#f00"}, wrapper);
+        svgEl("circle", {r: 5, cx: sGeom.end[0], cy: sGeom.end[1], fill: "#f00"}, wrapper);
         svgEl("rect", {
-          transform: `translate(${geom.start.join(",")}) rotate(${geom.angle})`,
+          transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle})`,
           x: 0,
-          y: -geom.width/2,
-          height: geom.width,
-          width: geom.length,
+          y: -sGeom.width/2,
+          height: sGeom.width,
+          width: sGeom.length,
           fill: "none",
-          "stroke": geom.invalid ? "#ff0000" : "#000000",
-          "stroke-width": geom.invalid ? 2 : 0.5,
+          "stroke": sGeom.invalid ? "#ff0000" : "#000000",
+          "stroke-width": sGeom.invalid ? 2 : 0.5,
           "stroke-dasharray": "6 5"
         }, wrapper);
+        
+        if (sGeom.invalid) continue;
+        
+        let lanesGroup = svgEl("g", {
+          "class": "lanes",
+          transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle}) translate(0,${-sGeom.width/2})`,
+        });
+        for (let lGeom of sGeom.lanesGeom) {
+          svgEl("rect", {
+            x: 0,
+            y: lGeom.offset,
+            height: lGeom.width,
+            width: sGeom.length + lGeom.endX,
+            fill: "none",
+            "stroke": "#000000",
+            "stroke-width": 0.5,
+            "stroke-dasharray": "2 4"
+          }, lanesGroup);      
+        }
         
       }
       
