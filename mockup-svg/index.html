@@ -414,6 +414,9 @@ let algorithms = {
         
         streetsGeom.push(geom);
       }
+      
+      streetsGeom.sort((a,b) => a.angle-b.angle);
+      
       // first pass finished 
       //   - relative street angles
       //   - angle classification (left, stright, right, invalid)
@@ -424,10 +427,12 @@ let algorithms = {
       // second pass:
       //   - establish lanes x' end
       for (let sGeom of streetsGeom) {
+      /*
         let firstLeft = sGeom.otherStreets[0];
         if (firstLeft.rel != "left") firstLeft = null;
         let firstRight = sGeom.otherStreets[sGeom.otherStreets.length-1]
         if (firstRight.rel != "right") firstRight = null;
+        */
         let continuationStreets = sGeom.otherStreets;
         for (let lGeom of sGeom.lanesGeom) {
           let { laneGeom, streetRel, stop } = findContinuationOrStop(lGeom, continuationStreets);
@@ -444,6 +449,8 @@ let algorithms = {
           
         }
       }
+      
+      console.log(streetsGeom);
       
       // returns { laneGeom, streetRel, stop}
       function findContinuationOrStop(laneGeom, otherStreets) {
@@ -473,26 +480,27 @@ let algorithms = {
           transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle})`,
           x: 0,
           y: -sGeom.width/2,
-          height: sGeom.width,
+          height: sGeom.width + 1,
           width: sGeom.length,
           fill: "none",
           "stroke": sGeom.invalid ? "#ff0000" : "#000000",
           "stroke-width": sGeom.invalid ? 2 : 0.5,
-          "stroke-dasharray": "6 5"
+          "stroke-dasharray": "8 3"
         }, wrapper);
         
         if (sGeom.invalid) continue;
         
         let lanesGroup = svgEl("g", {
           "class": "lanes",
-          transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle}) translate(0,${-sGeom.width/2})`,
-        });
+          transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle}) translate(0,0)`, // ${-sGeom.width/2}
+        }, wrapper);
         for (let lGeom of sGeom.lanesGeom) {
           svgEl("rect", {
-            x: 0,
-            y: lGeom.offset,
-            height: lGeom.width,
-            width: sGeom.length + lGeom.endX,
+            x: 2,
+            y: lGeom.offset + 2,
+            height: lGeom.width - 3,
+            width: sGeom.length + lGeom.endX - 4,
+            "class": "lane " + lGeom.lane.type,
             fill: "none",
             "stroke": "#000000",
             "stroke-width": 0.5,
