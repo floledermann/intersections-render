@@ -54,6 +54,10 @@ svg .lane.parking {
   fill: #eeeeff;
 }
 
+svg .lane.green {
+  fill: #99dd99;
+}
+
 button {
   cursor: pointer;
 }
@@ -148,7 +152,7 @@ let laneTypes = {
     label: "Parking",
     options: [
       { name: "width", type: "integer", defaultValue: 30 },  // width depends on type
-      { name: "type", choices: ["parallel","diagonal","orthogonal"], defaultValue: "parallel" },
+      { name: "orientation", choices: ["parallel","diagonal","orthogonal"], defaultValue: "parallel" },
     ]
   },
   "green": {
@@ -518,7 +522,7 @@ let algorithms = {
             width: sGeom.length + lGeom.endX - 4,
             "class": "lane " + lGeom.lane.type,
             fill: "none",
-            "stroke": "#000000",
+            //"stroke": "#000000",
             "stroke-width": 0.5,
             "stroke-dasharray": "2 4"
           }, lanesGroup);      
@@ -578,6 +582,10 @@ function buildUI(state, wrapper, update) {
         if (type == lane.type) option.selected = true;
         sel.appendChild(option);
       }
+      sel.addEventListener("input", e => {
+        lane[e.target.name] = e.target.value;
+        update(state);
+      });
     }
   }
   
