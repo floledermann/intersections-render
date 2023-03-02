@@ -15,9 +15,9 @@ export function intersectLinesByPoints(l1p1, l1p2, l2p1, l2p2) {
 
 export function intersectDist(p1, v1, p2, v2) {
   // check for parallel lines
-  if (va[0]*vb[1] == va[1]*vb[0]) return Infinity;
+  if (v1[0]*v2[1] == v1[1]*v2[0]) return Infinity;
   // check for div 0 (vb[0]==0) -> swap x,y (gives same result)
-  if (vb[0] == 0) {
+  if (v2[0] == 0) {
     p1=[p1[1],p1[0]];
     p2=[p2[1],p2[0]];
     v1=[v1[1],v1[0]];
@@ -64,4 +64,16 @@ export function tangentPoints(p1, r1, p2) {
     [p1[0] + r1 * Math.cos(d1), p1[1] + r1 * Math.sin(d1)],
     [p1[0] + r1 * Math.cos(d2), p1[1] + r1 * Math.sin(d2)]
   ];
+}
+
+export function arrayMin(arr) {
+  return arr.reduce(function (a, v) {
+    return ( a < v ? a : v );
+  });
+}
+
+export function arrayMax(arr) {
+  return arr.reduce(function (a, v) {
+    return ( a > v ? a : v );
+  });
 }
