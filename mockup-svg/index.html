@@ -380,7 +380,7 @@ function svgEl(tagName, attributes, parent) {
   
 let algorithms = {
   test1: {
-    generate: function(wrapper, state) {
+    generate: function(state, options) {
     
       const INVALID_CUTOFF_ANGLE = 30;
       const STRAIGHT_ANGLE = 45;
@@ -585,70 +585,57 @@ let algorithms = {
         }
       }
       
+      return streetsGeom;
+    }
+    
+  },
+  test2: {
+  }
+}
+
+let renderers = {
+
+  svgLaneBoxes: (streetsGeom, options) => {
+    for (let sGeom of streetsGeom) {
+      //if (sGeom.invalid) continue;
       
-      // returns { laneGeom, streetRel, stop}
-      function findContinuationOrStop(laneGeom, otherStreets) {
-      
-        for (let otherStreetRel of otherStreets) {
-          let otherLanes = otherStreetRel.streetGeom.lanesGeom;
-          // make copy and reverse order if not left turn
-          if (otherStreetRel.rel != "left") Array.from(otherLanes).reverse();
-          for (let otherLaneGeom of otherLanes) {
-            if (laneGeom.lane.type == otherLaneGeom.lane.type) {
-              return { laneGeom: otherLaneGeom, streetRel: otherStreetRel, stop: false }
-            }
-            if (lanePriorities.indexOf(laneGeom.lane.type) > lanePriorities.indexOf(otherLaneGeom.lane.type)) {
-              return { laneGeom: otherLaneGeom, streetRel: otherStreetRel, stop: true }
-            }
-          }
-        }
-        // should this ever happen?
-        throw "Neither continuation nor stop lane found";
-        return { laneGeom: null, streetRel: null, stop: true }
-      }
-      
-      for (let sGeom of streetsGeom) {
-        //if (sGeom.invalid) continue;
-        
-        let lanesGroup = svgEl("g", {
-          "class": "lanes",
-          transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle}) translate(0,0)`, // ${-sGeom.width/2}
-        }, wrapper);
-        for (let lGeom of sGeom.lanesGeom) {
-          svgEl("rect", {
-            x: 0,
-            y: lGeom.offset,
-            height: lGeom.width,
-            width: lGeom.endX,
-            "class": "lane " + lGeom.lane.type,
-            fill: "none",
-            //"stroke": "#000000",
-            "stroke-width": 0.5,
-            "stroke-dasharray": "2 4"
-          }, lanesGroup);      
-        }
-        
-      }
-      
-      for (let sGeom of streetsGeom) {
-        svgEl("circle", {r: 3, cx: sGeom.start[0], cy: sGeom.start[1], fill: "#f00"}, wrapper);
-        svgEl("circle", {r: 3, cx: sGeom.end[0], cy: sGeom.end[1], fill: "#f00"}, wrapper);
+      let lanesGroup = svgEl("g", {
+        "class": "lanes",
+        transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle}) translate(0,0)`, // ${-sGeom.width/2}
+      }, options.parent);
+      for (let lGeom of sGeom.lanesGeom) {
         svgEl("rect", {
-          transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle})`,
           x: 0,
-          y: -sGeom.width/2-0.5,
-          height: sGeom.width + 1,
-          width: sGeom.length,
+          y: lGeom.offset,
+          height: lGeom.width,
+          width: lGeom.endX,
+          "class": "lane " + lGeom.lane.type,
           fill: "none",
-          "stroke": sGeom.invalid ? "#ff0000" : "#000000",
-          "stroke-width": sGeom.invalid ? 2 : 0.2,
-          "stroke-dasharray": "8 3"
-        }, wrapper);        
+          //"stroke": "#000000",
+          "stroke-width": 0.5,
+          "stroke-dasharray": "2 4"
+        }, lanesGroup);      
       }
       
     }
   },
-  test2: {
+  
+  svgStreetBoxes: (streetsGeom, options) => {    
+    for (let sGeom of streetsGeom) {
+      svgEl("circle", {r: 3, cx: sGeom.start[0], cy: sGeom.start[1], fill: "#f00"}, options.parent);
+      svgEl("circle", {r: 3, cx: sGeom.end[0], cy: sGeom.end[1], fill: "#f00"}, options.parent);
+      svgEl("rect", {
+        transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle})`,
+        x: 0,
+        y: -sGeom.width/2-0.5,
+        height: sGeom.width + 1,
+        width: sGeom.length,
+        fill: "none",
+        "stroke": sGeom.invalid ? "#ff0000" : "#000000",
+        "stroke-width": sGeom.invalid ? 2 : 0.2,
+        "stroke-dasharray": "8 3"
+      }, options.parent);        
+    }
   }
 }
 
@@ -746,7 +733,9 @@ function buildSVG(state, wrapper, update) {
     
     for (let viz of state.visualizations) {
       svgs[i].innerHTML = "";
-      algorithms[viz.algorithm].generate(svgs[i], state);
+      let streetsGeom = algorithms[viz.algorithm].generate(state);
+      renderers.svgLaneBoxes(streetsGeom, { parent: svgs[i] });
+      renderers.svgStreetBoxes(streetsGeom, { parent: svgs[i] });
       i++;
     }
   }
