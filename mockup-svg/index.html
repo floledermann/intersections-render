@@ -238,7 +238,8 @@ let state = {
         {
           type: "parking",
           paint: true,
-          orientation: "parallel"
+          orientation: "parallel",
+          width: 22
         },
         {
           type: "car",
@@ -254,6 +255,7 @@ let state = {
           type: "parking",
           paint: true,
           orientation: "diagonal",
+          width: 30
         },
         {
           type: "cycle",
@@ -275,7 +277,8 @@ let state = {
         {
           type: "parking",
           paint: true,
-          orientation: "parallel"
+          orientation: "parallel",
+          width: 22
         },
         {
           type: "car",
@@ -291,6 +294,7 @@ let state = {
           type: "parking",
           paint: true,
           orientation: "diagonal",
+          width: 30
         },
         {
           type: "cycle",
@@ -318,6 +322,7 @@ let state = {
           type: "parking",
           paint: true,
           orientation: "diagonal",
+          width: 30
         },
         {
           type: "pedestrian",
@@ -345,6 +350,7 @@ let state = {
           type: "parking",
           paint: true,
           orientation: "diagonal",
+          width: 30
         },
         {
           type: "pedestrian",
@@ -561,10 +567,10 @@ let algorithms = {
             return l.streetGeom != laneGeom.streetGeom;
           });
           if (connectedLanes.length == 0) {
-            laneGeom.endX = streetGeom.length-100;
+            laneGeom.length = streetGeom.length-100;
           }
           else {
-            laneGeom.endX = arrayMin(connectedLanes.map(otherLane => {
+            laneGeom.length = arrayMin(connectedLanes.map(otherLane => {
               let rel = laneGeom.streetGeom.otherStreets.find(r => r.streetGeom == otherLane.streetGeom)?.rel;
               if (rel == "straight") {
                 // if it is also connected to a non-straight lane,
@@ -580,7 +586,7 @@ let algorithms = {
                 intersectDist(laneGeom.startLeft, laneGeom.unit, otherLane.startRight, otherLane.unit),
               );
             }));
-            //console.log(laneGeom.endX);
+            //console.log(laneGeom.length);
           }
         }
       }
@@ -608,7 +614,7 @@ let renderers = {
           x: 0,
           y: lGeom.offset,
           height: lGeom.width,
-          width: lGeom.endX,
+          width: lGeom.length,
           "class": "lane " + lGeom.lane.type,
           fill: "none",
           //"stroke": "#000000",
@@ -618,6 +624,56 @@ let renderers = {
       }
       
     }
+  },
+  
+  svgLaneMarkings: (streetsGeom, options) => {
+    for (let sGeom of streetsGeom) {
+      let lanesGroup = svgEl("g", {
+        "class": "lanes",
+        transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle}) translate(0,0)`, // ${-sGeom.width/2}
+      }, options.parent);
+      for (let lGeom of sGeom.lanesGeom) {
+        if (lGeom.lane.type == "parking") {
+          let laneGroup = svgEl("g", {
+            "class": "lane " + lGeom.lane.type,
+            transform: `translate(0,${lGeom.offset + lGeom.width/2})`,
+          }, lanesGroup);
+          let pos = 0;
+          let w = lGeom.width;
+          // step length of various parking orientations as a factor of width
+          let baseStep = {parallel:2,diagonal:0.75,orthogonal:0.5}[lGeom.lane.orientation||parallel];
+          baseStep *= lGeom.width;
+          // adjust so that hashes fit exactly within available space
+          // (distribute remainder)
+          let remainder = (lGeom.length-1) % baseStep;
+          let numSteps = Math.floor((lGeom.length-1) / baseStep);
+          let step = baseStep + remainder / numSteps;
+          let stepCount = 0;
+          while (pos < lGeom.length) {
+            switch (lGeom.lane.orientation) {
+              case "diagonal":
+                if (stepCount > 0) {
+                  svgEl("line", {x1: pos-baseStep, y1: -w/2, x2: pos, y2: w/2, stroke: "#bbf", "stroke-width": 3}, laneGroup);
+                  svgEl("line", {x1: pos-baseStep-3, y1: -w/2, x2: pos-baseStep+5, y2: -w/2, stroke: "#bbf", "stroke-width": 3}, laneGroup);
+                }
+                break;
+              case "orthogonal":
+                svgEl("circle", {r: 3, cx: pos, cy: 0, fill: "#99f"}, laneGroup);
+                break;
+              default: //parallel
+                  svgEl("line", {x1: pos, y1: -w/2, x2: pos, y2: w/2, stroke: "#bbf", "stroke-width": 3}, laneGroup);
+                  let x1=4, x2=4;
+                  if (stepCount == 0) x1=1.5;
+                  if (stepCount == numSteps) x2=1.5;
+                  svgEl("line", {x1: pos-x1, y1: w/2, x2: pos+x2, y2: w/2, stroke: "#bbf", "stroke-width": 3}, laneGroup);                
+            }
+            
+            pos += step;
+            stepCount++;
+          }
+        }
+      }
+    }       
   },
   
   svgStreetBoxes: (streetsGeom, options) => {    
@@ -735,7 +791,8 @@ function buildSVG(state, wrapper, update) {
       svgs[i].innerHTML = "";
       let streetsGeom = algorithms[viz.algorithm].generate(state);
       renderers.svgLaneBoxes(streetsGeom, { parent: svgs[i] });
-      renderers.svgStreetBoxes(streetsGeom, { parent: svgs[i] });
+      renderers.svgLaneMarkings(streetsGeom, { parent: svgs[i] });
+      renderers.svgStreetBoxes(streetsGeom, { parent: svgs[i] });    
       i++;
     }
   }
