@@ -51,20 +51,40 @@ svg .lane.car {
   fill: #eeeeee;
 }
 
+svg .intersection.car {
+  fill: #e9e9e9;
+}
+
 svg .lane.pedestrian {
   fill: #cccccc;
+}
+
+svg .intersection.pedestrian {
+  fill: #c7c7c7;
 }
 
 svg .lane.cycle {
   fill: #ffdddd;
 }
 
+svg .intersection.cycle {
+  fill: #fad8d8;
+}
+
 svg .lane.parking {
   fill: #eeeeff;
 }
 
+svg .intersection.parking {
+  fill: #e9e9fa;
+}
+
 svg .lane.green {
   fill: #99dd99;
+}
+
+svg .intersection.green {
+  fill: #96d896;
 }
 
 button {
@@ -476,10 +496,15 @@ let algorithms = {
         for (let laneGeom of geom.lanesGeom) {
           // start left, check clockwise with other streets
           laneGeom.offset -= streetWidth/2;
-          laneGeom.startRight = vAdd(geom.start, geom.normal, -laneGeom.offset);
-          laneGeom.startLeft = vAdd(geom.start, geom.normal, -laneGeom.offset-laneGeom.width);
-          laneGeom.endRight = vAdd(geom.end, geom.normal, -laneGeom.offset);
-          laneGeom.endLeft = vAdd(geom.end, geom.normal, -laneGeom.offset-laneGeom.width);
+          Object.assign(laneGeom, {
+            startRight: vAdd(geom.start, geom.normal, -laneGeom.offset),
+            startLeft: vAdd(geom.start, geom.normal, -laneGeom.offset-laneGeom.width),
+            //endRight: vAdd(geom.end, geom.normal, -laneGeom.offset),
+            //endLeft: vAdd(geom.end, geom.normal, -laneGeom.offset-laneGeom.width),
+            // we can use this to sort all lanes going around the crossing
+            // use lane position as fractional part added to street angle
+            clockwiseOrder: geom.angle + (1-(laneGeom.offset/streetWidth))
+          });
         }
         
       }
@@ -588,8 +613,39 @@ let algorithms = {
             }));
             //console.log(laneGeom.length);
           }
+          laneGeom.endLeft = vAdd(laneGeom.startLeft, laneGeom.unit, laneGeom.length);
+          laneGeom.endRight = vAdd(laneGeom.startRight, laneGeom.unit, laneGeom.length);
         }
       }
+      
+      // find intersection polygons
+      for (let streetGeom of streetsGeom) {
+        for (let laneGeom of streetGeom.lanesGeom) {
+          if (laneGeom.connectedLanes?.length > 1 && !laneGeom.intersectionPolygon) {
+            let connectedLanes = Array.from(laneGeom.connectedLanes).sort((a,b) => {
+              return a.clockwiseOrder - b.clockwiseOrder;
+            });
+            let points = [];
+            let lastLane = null;
+            for (let lGeom of connectedLanes) {
+              // add corner point for 2-lane case
+              if (connectedLanes.length == 2 && lastLane) {
+                points.push(intersect(lastLane.endRight, lastLane.unit, lGeom.endLeft, lGeom.unit));
+              }
+              points.push(lGeom.endLeft);
+              points.push(lGeom.endRight);
+              if (connectedLanes.length == 2 && lastLane) {
+                points.push(intersect(lastLane.endLeft, lastLane.unit, lGeom.endRight, lGeom.unit));
+              }
+              lastLane = lGeom;
+            }
+            for (let lGeom of connectedLanes) {
+              lGeom.intersectionPoly = points;
+            }
+          }
+        }
+      }
+      
       
       return streetsGeom;
     }
@@ -607,7 +663,7 @@ let renderers = {
       
       let lanesGroup = svgEl("g", {
         "class": "lanes",
-        transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle}) translate(0,0)`, // ${-sGeom.width/2}
+        transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle}) translate(0,0)`,
       }, options.parent);
       for (let lGeom of sGeom.lanesGeom) {
         svgEl("rect", {
@@ -621,6 +677,28 @@ let renderers = {
           "stroke-width": 0.5,
           "stroke-dasharray": "2 4"
         }, lanesGroup);      
+      }
+      
+    }
+  },
+  
+  svgIntersectionPolygons: (streetsGeom, options) => {
+    let rendered = [];
+    for (let sGeom of streetsGeom) {
+      for (let lGeom of sGeom.lanesGeom) {
+        if (lGeom.intersectionPoly && !rendered.includes(lGeom.intersectionPoly)) {
+          svgEl("polygon", {
+            points: lGeom.intersectionPoly.map(p => p.join(",")).join(" "),
+            height: lGeom.width,
+            width: lGeom.length,
+            "class": "intersection " + lGeom.lane.type,
+            fill: "none",
+            //"stroke": "#000000",
+            "stroke-width": 0.5,
+            "stroke-dasharray": "2 4"
+          }, options.parent);   
+        }
+        rendered.push(lGeom.intersectionPoly);
       }
       
     }
@@ -641,7 +719,7 @@ let renderers = {
           let pos = 0;
           let w = lGeom.width;
           // step length of various parking orientations as a factor of width
-          let baseStep = {parallel:2,diagonal:0.75,orthogonal:0.5}[lGeom.lane.orientation||parallel];
+          let baseStep = {parallel:2.2,diagonal:0.75,orthogonal:0.5}[lGeom.lane.orientation||parallel];
           baseStep *= lGeom.width;
           // adjust so that hashes fit exactly within available space
           // (distribute remainder)
@@ -678,8 +756,8 @@ let renderers = {
   
   svgStreetBoxes: (streetsGeom, options) => {    
     for (let sGeom of streetsGeom) {
-      svgEl("circle", {r: 3, cx: sGeom.start[0], cy: sGeom.start[1], fill: "#f00"}, options.parent);
-      svgEl("circle", {r: 3, cx: sGeom.end[0], cy: sGeom.end[1], fill: "#f00"}, options.parent);
+      //svgEl("circle", {r: 3, cx: sGeom.start[0], cy: sGeom.start[1], fill: "#f00"}, options.parent);
+      //svgEl("circle", {r: 3, cx: sGeom.end[0], cy: sGeom.end[1], fill: "#f00"}, options.parent);
       svgEl("rect", {
         transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle})`,
         x: 0,
@@ -687,12 +765,30 @@ let renderers = {
         height: sGeom.width + 1,
         width: sGeom.length,
         fill: "none",
-        "stroke": sGeom.invalid ? "#ff0000" : "#000000",
+        "stroke": sGeom.invalid ? "#ff0000" : "none",
         "stroke-width": sGeom.invalid ? 2 : 0.2,
         "stroke-dasharray": "8 3"
       }, options.parent);        
     }
+  },
+  
+  svgLanesDebug: (streetsGeom, options) => {    
+    for (let sGeom of streetsGeom) {
+      let laneGroup = svgEl("g", {
+        "class": "lanes",
+        transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle}) translate(0,0)`, // ${-sGeom.width/2}
+      }, options.parent);
+      for (let lGeom of sGeom.lanesGeom) {
+        let textEl = svgEl("text", {
+          transform: `translate(0,${lGeom.offset + lGeom.width/2})`,
+          fill: "#000",
+          y: 3
+        }, laneGroup);
+        textEl.innerHTML = lGeom.id;
+      }
+    }
   }
+
 }
 
 function buildUI(state, wrapper, update) {
@@ -726,8 +822,11 @@ function buildUI(state, wrapper, update) {
         
     for (let lane of street.lanes) {
     
-      Object.assign(lane, laneDefaults[lane.type], lane);
-    
+      // assign defaults to original lane data
+      // TODO: this should be done elsewhere
+      let laneWithDefaults = Object.assign({}, laneDefaults[lane.type], lane);
+      Object.assign(lane, laneWithDefaults);
+      
       let laneUI = laneUiTemplate.cloneNode(true);
       lanesWrapper.appendChild(laneUI);
       
@@ -791,8 +890,10 @@ function buildSVG(state, wrapper, update) {
       svgs[i].innerHTML = "";
       let streetsGeom = algorithms[viz.algorithm].generate(state);
       renderers.svgLaneBoxes(streetsGeom, { parent: svgs[i] });
+      renderers.svgIntersectionPolygons(streetsGeom, { parent: svgs[i] });
       renderers.svgLaneMarkings(streetsGeom, { parent: svgs[i] });
       renderers.svgStreetBoxes(streetsGeom, { parent: svgs[i] });    
+      //renderers.svgLanesDebug(streetsGeom, { parent: svgs[i] });    
       i++;
     }
   }
