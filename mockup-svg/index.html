@@ -14,7 +14,7 @@ select {
 }
 
 h2 {
-  margin: 5px 0;
+  margin: 0 0 2px;
 }
 
 .hblock {
@@ -30,8 +30,8 @@ h2 {
   display: block;
   border: 1px solid #fff;
   border-radius: 5px;
-  padding: 5px;
-  margin: 5px 0;
+  padding: 2px;
+  margin: 3px 0;
 }
 
 #viz-wrapper, #notes {
@@ -48,11 +48,11 @@ svg {
 }
 
 svg .lane.car {
-  fill: #eeeeee;
+  fill: #dddddd;
 }
 
 svg .intersection.car {
-  fill: #e9e9e9;
+  fill: #d4d4d4;
 }
 
 svg .lane.pedestrian {
@@ -60,7 +60,7 @@ svg .lane.pedestrian {
 }
 
 svg .intersection.pedestrian {
-  fill: #c7c7c7;
+  fill: #c3c3c3;
 }
 
 svg .lane.cycle {
@@ -76,7 +76,7 @@ svg .lane.parking {
 }
 
 svg .intersection.parking {
-  fill: #e9e9fa;
+  fill: #e0e0f4;
 }
 
 svg .lane.green {
@@ -148,6 +148,8 @@ import { vMult, vAdd, vSub, vLen, vUnit,
          degRad, radDeg,
          normalizeAngle, normalizeAngle180, normalizeAngle90,
          arrayMin, arrayMax } from "./vecMath.js";
+         
+import testcases from "./testcases.js";
 
 let laneTypes = {
   "car": {
@@ -194,7 +196,8 @@ let laneTypes = {
       { name: "width", type: "integer", defaultValue: 30 },  // width depends on type
       { name: "orientation", choices: ["parallel","diagonal","orthogonal"], defaultValue: "parallel" },
     ],
-    "continue": "straight"
+    "continue": "straight",
+    retractFromCrossing: 200, // 
   },
   "green": {
     label: "Grass",
@@ -244,143 +247,8 @@ let lanePriorities = [
 ];
 
 let state = {
-  settings: {
-  },
-  streets: [
-    {
-      angle: -22,
-      lanes: [
-        {
-          type: "pedestrian",
-          curb: true,
-          boundary: "building",
-        },
-        {
-          type: "parking",
-          paint: true,
-          orientation: "parallel",
-          width: 22
-        },
-        {
-          type: "car",
-          paint: true,
-          direction: "backward",
-        },          
-        {
-          type: "car",
-          paint: true,
-          direction: "forward",
-        },          
-        {
-          type: "parking",
-          paint: true,
-          orientation: "diagonal",
-          width: 30
-        },
-        {
-          type: "cycle",
-          curb: true,
-          color: "red",
-          oneway: false
-        },
-      ],
-    },
-    {
-      angle: 180,
-      lanes: [
-        {
-          type: "pedestrian",
-          curb: true,
-          boundary: "building",
-          curbHeight: 15,
-        },
-        {
-          type: "parking",
-          paint: true,
-          orientation: "parallel",
-          width: 22
-        },
-        {
-          type: "car",
-          paint: true,
-          direction: "backward",
-        },          
-        {
-          type: "car",
-          paint: true,
-          direction: "forward",
-        },          
-        {
-          type: "parking",
-          paint: true,
-          orientation: "diagonal",
-          width: 30
-        },
-        {
-          type: "cycle",
-          curb: true,
-          color: "red",
-          oneway: false
-        },
-      ],
-    },
-    {
-      angle: 90,
-      lanes: [
-        {
-          type: "pedestrian",
-          curb: true,
-          boundary: "building",
-          curbHeight: 15,
-        },
-        {
-          type: "car",
-          paint: true,
-          direction: "backward",
-        },          
-        {
-          type: "parking",
-          paint: true,
-          orientation: "diagonal",
-          width: 30
-        },
-        {
-          type: "pedestrian",
-          curb: true,
-          boundary: "building",
-          curbHeight: 15,
-        },
-      ],
-    },
-    {
-      angle: 260,
-      lanes: [
-        {
-          type: "pedestrian",
-          curb: true,
-          boundary: "building",
-          curbHeight: 15,
-        },
-        {
-          type: "car",
-          paint: true,
-          direction: "backward",
-        },          
-        {
-          type: "parking",
-          paint: true,
-          orientation: "diagonal",
-          width: 30
-        },
-        {
-          type: "pedestrian",
-          curb: true,
-          boundary: "building",
-          curbHeight: 15,
-        },
-      ],
-    },
-  ],
+  settings: testcases[0].settings,
+  streets: testcases[0].streets,
   visualizations: [
     { 
       width: 600,
@@ -488,7 +356,8 @@ let algorithms = {
             normal: geom.normal,
             lane: lane,
             streetGeom: geom,
-            connectedLanes: [],
+            connectedLanes: new Set(),
+            stoppedBy: [],
             priority: lanePriorities.indexOf(lane.type)
           });
           
@@ -542,39 +411,54 @@ let algorithms = {
         let targetPriority = lanePriorities.indexOf(laneType);
         let reverse = true;
         for (let order of streetsGeomOrder) {
-          currentLane = null;
+          let lastLane = null;
+          let lanesToPass = new Set();
+          let separatingLanes = new Set();
+          let connectedLanes = null;
           let laneStack = []; // a stack of lanes to pass
           for (let streetGeom of order) {
             let lanesGeom = streetGeom.lanesGeom;
             if (reverse) lanesGeom = Array.from(lanesGeom).reverse();
             for (let laneGeom of lanesGeom) {
-              // initialize with first lane
-              if (!currentLane) currentLane = laneGeom;
-              if (laneGeom.priority < currentLane.priority) {
+              if (laneGeom.priority < targetPriority) {
                 // higher-priority lane -> must be passed first
-                laneStack.push(laneGeom);
+                if (lanesToPass.has(laneGeom)) {
+                  // already in lanesToPass -> remove
+                  lanesToPass.delete(laneGeom);                
+                }
+                else {
+                  // not in lanesToPass -> add this and all connected lanes
+                  // to lanesToPass
+                  laneGeom.connectedLanes.forEach(l => lanesToPass.add(l));
+                  lanesToPass.delete(laneGeom);
+                }
+                if (separatingLanes.has(laneGeom)) {
+                  separatingLanes.delete(laneGeom);
+                  if (separatingLanes.size == 0) {
+                    ({lastLane, lanesToPass, separatingLanes} = laneStack.pop());
+                  }
+                }
               }
               else {
                 if (laneGeom.lane.type == laneType) {
-                  if (state.lanesToPass.size > 0) {
-                    // we still have some lanes to pass,
-                    // so start a new segment
-                    passStack.push(state);
-                    state = {
-                      lanesToPass: new Set(),
-                      connectedLanes: [],
-                      priority: targetPriority
-                    };
+                  if (lanesToPass.size > 0) {
+                    // still lanes to clear, so push on stack and start new connected lanes
+                    laneStack.push({lastLane, lanesToPass, separatingLanes});
+                    separatingLanes = new Set(lanesToPass);
+                    lanesToPass = new Set();
+                    lastLane = null;
+                    connectedLanes = null;
                   }
                   // if connected lanes have already been found on reverse pass
                   // add to those
-                  if (state.connectedLanes.length == 0 && laneGeom.connectedLanes) {
-                    state.connectedLanes = laneGeom.connectedLanes;
+                  if (!connectedLanes) {
+                    connectedLanes = lastLane?.connectedLanes || laneGeom.connectedLanes;
                   }
-                  if (!state.connectedLanes.includes(laneGeom)) {
-                    state.connectedLanes.push(laneGeom);
+                  if (!connectedLanes.has(laneGeom)) {
+                    connectedLanes.add(laneGeom);
                   }
-                  laneGeom.connectedLanes = state.connectedLanes;
+                  laneGeom.connectedLanes = connectedLanes;
+                  lastLane = laneGeom;
                 }
               }
             }
@@ -587,6 +471,8 @@ let algorithms = {
 
       for (let streetGeom of streetsGeom) {
         for (let laneGeom of streetGeom.lanesGeom) {
+          // convert set to array
+          laneGeom.connectedLanes = Array.from(laneGeom.connectedLanes);
           // disregard all "connected" lanes in the same street, 
           // including the current lane
           let connectedLanes = laneGeom.connectedLanes.filter(l => {
@@ -720,7 +606,7 @@ let renderers = {
           let pos = 0;
           let w = lGeom.width;
           // step length of various parking orientations as a factor of width
-          let baseStep = {parallel:2.2,diagonal:0.75,orthogonal:0.5}[lGeom.lane.orientation||parallel];
+          let baseStep = {parallel:2.2,diagonal:0.75,orthogonal:0.5}[lGeom.lane.orientation||"parallel"];
           baseStep *= lGeom.width;
           // adjust so that hashes fit exactly within available space
           // (distribute remainder)
