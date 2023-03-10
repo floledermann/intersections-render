@@ -539,46 +539,42 @@ let algorithms = {
       let streetsGeomOrder = [streetsGeomWrap, Array.from(streetsGeomWrap).reverse()];
       
       for (let laneType of lanePriorities) {
-        let priority = lanePriorities.indexOf(laneType);
+        let targetPriority = lanePriorities.indexOf(laneType);
         let reverse = true;
         for (let order of streetsGeomOrder) {
-          let currentLanes = [];
-          let lanesToPass = null;
-          let passPriority = null;
+          currentLane = null;
+          let laneStack = []; // a stack of lanes to pass
           for (let streetGeom of order) {
             let lanesGeom = streetGeom.lanesGeom;
             if (reverse) lanesGeom = Array.from(lanesGeom).reverse();
             for (let laneGeom of lanesGeom) {
-              if (currentLanes.length > 0 && laneGeom.priority < priority) {
-                // higher-priority lane -> must be passed first 
-                /*
-                if (!lanesToPass || laneGeom.priority < passPriority) {
-                  lanesToPass = Array.from(laneGeom.connectedLanes);
-                  passPriority = laneGeom.priority;
-                }
-                else {
-                  if (lanesToPass.includes(laneGeom)) {
-                    lanesToPass = lanesToPass.splice(lanesToPass.indexOf(laneGeom),1);
-                    if (lanesToPass.length == 0) {
-                      lanesToPass = null;
-                      passPriority = null;
-                    }
-                  }
-                }
-                */
-                currentLanes = [];
+              // initialize with first lane
+              if (!currentLane) currentLane = laneGeom;
+              if (laneGeom.priority < currentLane.priority) {
+                // higher-priority lane -> must be passed first
+                laneStack.push(laneGeom);
               }
-              if (laneGeom.lane.type == laneType) {
-                if (!lanesToPass) {
+              else {
+                if (laneGeom.lane.type == laneType) {
+                  if (state.lanesToPass.size > 0) {
+                    // we still have some lanes to pass,
+                    // so start a new segment
+                    passStack.push(state);
+                    state = {
+                      lanesToPass: new Set(),
+                      connectedLanes: [],
+                      priority: targetPriority
+                    };
+                  }
                   // if connected lanes have already been found on reverse pass
                   // add to those
-                  if (currentLanes.length == 0 && laneGeom.connectedLanes) {
-                    currentLanes = laneGeom.connectedLanes;
+                  if (state.connectedLanes.length == 0 && laneGeom.connectedLanes) {
+                    state.connectedLanes = laneGeom.connectedLanes;
                   }
-                  if (!currentLanes.includes(laneGeom)) {
-                    currentLanes.push(laneGeom);
+                  if (!state.connectedLanes.includes(laneGeom)) {
+                    state.connectedLanes.push(laneGeom);
                   }
-                  laneGeom.connectedLanes = currentLanes;
+                  laneGeom.connectedLanes = state.connectedLanes;
                 }
               }
             }
