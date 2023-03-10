@@ -416,7 +416,8 @@ let algorithms = {
       
       for (let street of state.streets) {
         let geom = {
-          id: "street" + streetCounter++,
+          id: "street" + streetCounter,
+          index: streetCounter-1,
           angle: normalizeAngle(street.angle),
           end: [0,0],
           length: street.length || 280,
@@ -433,6 +434,7 @@ let algorithms = {
         geom.normal = [geom.unit[1], -geom.unit[0]];
         
         streetsGeom.push(geom);
+        streetCounter++;
       }
       
       for (let geom of streetsGeom) {
@@ -477,7 +479,9 @@ let algorithms = {
           let laneWidth = laneDef.width || 20;
           
           geom.lanesGeom.push({
-            id: geom.id + "-lane" + laneCounter++,
+            id: geom.id + "-lane" + laneCounter,
+            index: laneCounter-1,
+            streetIndex: geom.index,
             width: laneWidth,
             offset: streetWidth,
             unit: geom.unit,
@@ -489,6 +493,7 @@ let algorithms = {
           });
           
           streetWidth += laneWidth;
+          laneCounter++;
         }
         
         geom.width = streetWidth;
