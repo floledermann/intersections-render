@@ -32,7 +32,7 @@ const testcases = [
             type: "parking",
             paint: true,
             orientation: "diagonal",
-            width: 30
+            width: 37
           },
           {
             type: "cycle",
@@ -43,7 +43,7 @@ const testcases = [
         ],
       },
       {
-        angle: 180,
+        angle: 170,
         lanes: [
           {
             type: "pedestrian",
@@ -71,7 +71,7 @@ const testcases = [
             type: "parking",
             paint: true,
             orientation: "diagonal",
-            width: 30
+            width: 37
           },
           {
             type: "cycle",
@@ -99,7 +99,7 @@ const testcases = [
             type: "parking",
             paint: true,
             orientation: "diagonal",
-            width: 30
+            width: 37
           },
           {
             type: "pedestrian",
@@ -110,7 +110,7 @@ const testcases = [
         ],
       },
       {
-        angle: 260,
+        angle: 250,
         lanes: [
           {
             type: "pedestrian",
@@ -127,7 +127,7 @@ const testcases = [
             type: "parking",
             paint: true,
             orientation: "diagonal",
-            width: 30
+            width: 37
           },
           {
             type: "pedestrian",
