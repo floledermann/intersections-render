@@ -429,7 +429,8 @@ let algorithms = {
             if (reverse) lanesGeom = Array.from(lanesGeom).reverse();
             for (let laneGeom of lanesGeom) {
               if (laneGeom.priority < targetPriority) {
-                if (lastLane && lanesToPass.size == 0 && (lastLane.streetGeom != laneGeom.streetGeom)) { //  
+                if (lastLane && lanesToPass.size == 0 && (lastLane.streetGeom != laneGeom.streetGeom)) { 
+                  // TODO: fix case when going around 0° (needs one more iteration "around")
                   //let index = reverse ? 0 : 1;
                   //if ((reverse && lastLane.stoppedBy.length == 0) ||
                   //    (!reverse && lastLane.stoppedBy.length == 1)) {
