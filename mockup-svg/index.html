@@ -420,14 +420,21 @@ let algorithms = {
         let reverse = true;
         for (let order of streetsGeomOrder) {
           let lastLane = null;
+          // lanes that need to be passed before connecting to other lanes
           let lanesToPass = new Set();
+          // higher-priority lanes that potentially separate the lane from connecting
+          // TODO: is this the same as lanesToPass? - I can't remember, test this ;)
           let separatingLanes = new Set();
+          // lanes in parallel to the current one 
+          // that "shield" the lane from being stopped
+          let shieldingLanes = []; 
           let connectedLanes = null;
           let laneStack = []; // a stack of lanes to pass
           for (let streetGeom of order) {
             let lanesGeom = streetGeom.lanesGeom;
             if (reverse) lanesGeom = Array.from(lanesGeom).reverse();
             for (let laneGeom of lanesGeom) {
+//if (laneGeom.id == "street2-lane5" && laneGeom.priority == targetPriority && !reverse) debugger;
               if (laneGeom.priority < targetPriority) {
                 if (lastLane && lanesToPass.size == 0 && (lastLane.streetGeom != laneGeom.streetGeom)) { 
                   // TODO: fix case when going around 0° (needs one more iteration "around")
@@ -438,8 +445,16 @@ let algorithms = {
                     // in a crossing street as the stopping lane, 
                     // in each direction
                     // first higher-priority lane -> set stoppedBy
-                    lastLane.stoppedBy.push(laneGeom);
+                    
+                    // only if the other lane is not stopped by one of our shielding lanes
+                    if (!laneGeom.stoppedBy.some(l => shieldingLanes.includes(l))) {
+                      lastLane.stoppedBy.push(laneGeom);
+                    }
                   //}
+                }
+                // higher-priority lanes in parallel might shield the lane from being stopped
+                if (lastLane && lastLane.streetGeom == laneGeom.streetGeom) {
+                  shieldingLanes.push(laneGeom);
                 }
                 // higher-priority lane -> must be passed first
                 if (lanesToPass.has(laneGeom)) {
@@ -449,7 +464,10 @@ let algorithms = {
                 else {
                   // not in lanesToPass -> add this and all connected lanes
                   // to lanesToPass
-                  laneGeom.connectedLanes.forEach(l => lanesToPass.add(l));
+                  laneGeom.connectedLanes.forEach(l => {
+                    lanesToPass.add(l);
+                  });
+                  // immediately remove the current lane (we have passed it)
                   lanesToPass.delete(laneGeom);
                 }
                 if (separatingLanes.has(laneGeom)) {
@@ -478,6 +496,7 @@ let algorithms = {
                     connectedLanes.add(laneGeom);
                   }
                   laneGeom.connectedLanes = connectedLanes;
+                  shieldingLanes = [];
                   lastLane = laneGeom;
                 }
               }
@@ -730,17 +749,20 @@ let renderers = {
     }
   },
   
-  svgLanesDebug: (streetsGeom, options) => {    
+  svgLanesLabels: (streetsGeom, options) => {    
     for (let sGeom of streetsGeom) {
       let laneGroup = svgEl("g", {
         "class": "lanes",
-        transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle}) translate(0,0)`, // ${-sGeom.width/2}
+        transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle})`, // ${-sGeom.width/2}
       }, options.parent);
+      let flipped = Math.abs(normalizeAngle180(sGeom.angle)) <= 90;
       for (let lGeom of sGeom.lanesGeom) {
         let textEl = svgEl("text", {
-          transform: `translate(0,${lGeom.offset + lGeom.width/2})`,
+          transform: `translate(0,${lGeom.offset + lGeom.width/2}) rotate(${flipped ? 0 : 180})`,
           fill: "#000",
-          y: 3
+          x: flipped ? 5 : -5,
+          y: 5,
+          "text-anchor": flipped ? "start" : "end"
         }, laneGroup);
         textEl.innerHTML = lGeom.id;
       }
@@ -851,7 +873,7 @@ function buildSVG(state, wrapper, update) {
       renderers.svgIntersectionPolygons(streetsGeom, { parent: svgs[i] });
       renderers.svgLaneMarkings(streetsGeom, { parent: svgs[i] });
       renderers.svgStreetBoxes(streetsGeom, { parent: svgs[i] });    
-      //renderers.svgLanesDebug(streetsGeom, { parent: svgs[i] });    
+      //renderers.svgLanesLabels(streetsGeom, { parent: svgs[i] });    
       i++;
     }
   }
