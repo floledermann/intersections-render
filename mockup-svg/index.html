@@ -45,46 +45,51 @@ ul {
 
 svg {
   margin: 5px;
+  
+  --color-lane-car: #dddddd;
+  --color-intersection-car: #d4d4d4;
+  --color-lane-pedestrian: #cccccc;
+  --color-intersection-pedestrian: #c3c3c3;
+  --color-lane-cycle: #ffdddd;
+  --color-intersection-cycle: #f4d2d2;
+  --color-lane-parking: #eeeeff;
+  --color-intersection-parking: #e0e0f4;
 }
 
 svg .lane.car {
-  fill: #dddddd;
+  fill: var(--color-lane-car);
 }
 
 svg .intersection.car {
-  fill: #d4d4d4;
+  fill: var(--color-lane-car);
 }
 
 svg .lane.pedestrian {
-  fill: #cccccc;
+  fill: var(--color-lane-pedestrian);
 }
 
 svg .intersection.pedestrian {
-  fill: #cccccc;
-  xfill: #c3c3c3;
+  fill: var(--color-lane-pedestrian);
 }
 
 svg .lane.cycle {
-  fill: #ffdddd;
+  fill: var(--color-lane-cycle);
 }
 
 svg .intersection.cycle {
-  fill: #ffdddd;
-  xfill: #f4d2d2;
+  fill: var(--color-lane-cycle);
 }
 
 svg .lane.parking {
-  fill: #eeeeff;
+  fill: var(--color-lane-parking);
 }
 
 svg .intersection.parking {
-  fill: #eeeeff;
-  xfill: #e0e0f4;
+  fill: var(--color-lane-pedestrian);
 }
 
 svg .retraction.parking {
-  fill: #eeeeff;
-  xfill: #e0e0f4;
+  fill: var(--color-lane-pedestrian);
 }
 
 svg .lane.green {
