@@ -118,6 +118,8 @@ button {
 <ul>
 <li>construct "expansion" polygon (e.g. "Ohrwascheln" / parking)</li>
 <li>construct crossings (Zebra / bicycle)</li>
+<li>collection of test cases</li>
+<li>point features in lanes (trees, traffic islands)</li>
 </ul>
 </section>
 
@@ -544,11 +546,14 @@ let algorithms = {
             laneGeom.length = arrayMin(connectedLanes.map(otherLane => {
               let rel = laneGeom.streetGeom.otherStreets.find(r => r.streetGeom == otherLane.streetGeom)?.rel;
               if (rel == "straight") {
-                // if it is also connected to a non-straight lane,
+                // if it is also connected to a non-straight lane both left and right,
                 // ignore the straight intersection
                 // (otherwise may intersect at a very shallow angle,
                 //  degenerating the intersection point)
-                if (connectedLanes.find(l => laneGeom.streetGeom.otherStreets.find(r => r.streetGeom == l.streetGeom).rel != "straight")) {
+                // TODO: this should look only to the leftmost and rightmost connecting lanes
+                //       (independent of "rel" classification)
+                if (connectedLanes.some(l => laneGeom.streetGeom.otherStreets.find(r => r.streetGeom == l.streetGeom).rel == "left") &&
+                    connectedLanes.some(l => laneGeom.streetGeom.otherStreets.find(r => r.streetGeom == l.streetGeom).rel == "right")) {
                   return Infinity;
                 }
               }
@@ -608,6 +613,7 @@ let algorithms = {
               laneGeom.intersectionPoly = points;  
             }
           }
+          // TODO: calculate expansion earlier - should be part of topology 
           let retract = laneTypes[laneGeom.lane.type]?.retractFromCrossing || 0;
           laneGeom.retractedLength = laneGeom.length - retract;
           if (retract) {
