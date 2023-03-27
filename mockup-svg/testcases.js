@@ -52,6 +52,11 @@ const testcases = [
             color: "red",
             oneway: false
           },
+          {
+            type: "pedestrian",
+            curb: true,
+            boundary: "building",
+          },
         ],
       },
       {
@@ -64,10 +69,16 @@ const testcases = [
             curbHeight: 15,
           },
           {
+            type: "cycle",
+            curb: true,
+            color: "red",
+            oneway: false
+          },
+          {
             type: "parking",
             paint: true,
-            orientation: "parallel",
-            width: 22
+            orientation: "diagonal",
+            width: 37
           },
           {
             type: "car",
@@ -82,14 +93,14 @@ const testcases = [
           {
             type: "parking",
             paint: true,
-            orientation: "diagonal",
-            width: 37
+            orientation: "parallel",
+            width: 22
           },
           {
-            type: "cycle",
+            type: "pedestrian",
             curb: true,
-            color: "red",
-            oneway: false
+            boundary: "building",
+            curbHeight: 15,
           },
         ],
       },
@@ -101,6 +112,12 @@ const testcases = [
             curb: true,
             boundary: "building",
             curbHeight: 15,
+          },
+          {
+            type: "cycle",
+            curb: true,
+            color: "red",
+            oneway: false
           },
           {
             type: "car",
@@ -131,16 +148,16 @@ const testcases = [
             curbHeight: 15,
           },
           {
-            type: "car",
-            paint: true,
-            direction: "backward",
-          },          
-          {
             type: "parking",
             paint: true,
             orientation: "diagonal",
             width: 37
           },
+          {
+            type: "car",
+            paint: true,
+            direction: "backward",
+          },          
           {
             type: "pedestrian",
             curb: true,
