@@ -398,6 +398,7 @@ let algorithms = {
         
         geom.width = streetWidth;
         
+        let lastLane = null;
         for (let laneGeom of geom.lanesGeom) {
           // start left, check clockwise with other streets
           laneGeom.offset -= streetWidth/2;
@@ -408,8 +409,12 @@ let algorithms = {
             //endLeft: vAdd(geom.end, geom.normal, -laneGeom.offset-laneGeom.width),
             // we can use this to sort all lanes going around the crossing
             // use lane position as fractional part added to street angle
-            clockwiseOrder: geom.angle + (1-(laneGeom.offset/streetWidth))
+            clockwiseOrder: geom.angle + (1-(laneGeom.offset/streetWidth)),
+            laneLeft: lastLane,
+            laneRight: null
           });
+          if (lastLane) lastLane.laneRight = laneGeom;
+          lastLane = laneGeom;
         }
         
       }
@@ -720,34 +725,63 @@ let renderers = {
             "class": "lane " + lGeom.lane.type,
             transform: `translate(0,${lGeom.offset + lGeom.width/2})`,
           }, lanesGroup);
+          
+          let strokeWidth = 3;
           let pos = 0;
           let w = lGeom.width;
+          
+          let accessSide = lGeom.lane.accessSide || "left";
+          if (!lGeom.lane.accessSide) {
+            if (lGeom.laneLeft?.lane.type != "car") {
+              if (lGeom.laneRight?.lane.type == "car") {
+                accessSide = "right";
+              }
+              else {
+                // no car lane to left or right
+                accessSide = "none";
+              }
+            }            
+          }
+          let direction = lGeom.lane.direction || "forward";
           // step length of various parking orientations as a factor of width
           let baseStep = {parallel:2.2,diagonal:0.75,orthogonal:0.5}[lGeom.lane.orientation||"parallel"];
           baseStep *= lGeom.width;
           // adjust so that hashes fit exactly within available space
           // (distribute remainder)
-          let remainder = (lGeom.retractedLength-1) % baseStep;
-          let numSteps = Math.floor((lGeom.retractedLength-1) / baseStep);
+          let remainder = (lGeom.retractedLength-strokeWidth) % baseStep;
+          let numSteps = Math.floor((lGeom.retractedLength-strokeWidth) / baseStep);
           let step = baseStep + remainder / numSteps;
           let stepCount = 0;
           while (pos < lGeom.retractedLength) {
             switch (lGeom.lane.orientation) {
               case "diagonal":
                 if (stepCount > 0) {
-                  svgEl("line", {x1: pos-baseStep, y1: -w/2, x2: pos, y2: w/2, stroke: "#bbf", "stroke-width": 3}, laneGroup);
-                  svgEl("line", {x1: pos-baseStep-3, y1: -w/2, x2: pos-baseStep+5, y2: -w/2, stroke: "#bbf", "stroke-width": 3}, laneGroup);
+                  svgEl("line", {x1: pos-baseStep, y1: -w/2, x2: pos, y2: w/2, stroke: "#bbf", "stroke-width": strokeWidth}, laneGroup);
+                  if (accessSide != "none") {
+                  
+                    let y = w/2-1; //-strokeWidth/2;
+                    let dx = baseStep-strokeWidth/2;
+                    if (accessSide == "left") {
+                      y *= -1;
+                      dx = 0;
+                    }
+                    svgEl("line", {x1: pos-baseStep-strokeWidth+dx, y1: y, x2: pos-baseStep+5+dx, y2: y, stroke: "#bbf", "stroke-width": strokeWidth}, laneGroup);
+                  }
                 }
                 break;
               case "orthogonal":
-                svgEl("circle", {r: 3, cx: pos, cy: 0, fill: "#99f"}, laneGroup);
+                svgEl("circle", {r: strokeWidth, cx: pos, cy: 0, fill: "#99f"}, laneGroup);
                 break;
               default: //parallel
-                  svgEl("line", {x1: pos, y1: -w/2, x2: pos, y2: w/2, stroke: "#bbf", "stroke-width": 3}, laneGroup);
-                  let x1=4, x2=4;
-                  if (stepCount == 0) x1=1.5;
-                  if (stepCount == numSteps) x2=1.5;
-                  svgEl("line", {x1: pos-x1, y1: w/2, x2: pos+x2, y2: w/2, stroke: "#bbf", "stroke-width": 3}, laneGroup);                
+                  svgEl("line", {x1: pos+strokeWidth/2, y1: -w/2, x2: pos+strokeWidth/2, y2: w/2, stroke: "#bbf", "stroke-width": strokeWidth}, laneGroup);
+                  if (accessSide != "none") {
+                    let x1=4, x2=4;
+                    if (stepCount == 0) x1=1.5;
+                    if (stepCount == numSteps) x2=1.5;
+                    let y = w/2-strokeWidth/2;
+                    if (accessSide == "left") y *= -1;
+                    svgEl("line", {x1: pos-x1+strokeWidth/2, y1: y, x2: pos+x2+strokeWidth/2, y2: y, stroke: "#bbf", "stroke-width": strokeWidth}, laneGroup);
+                  }                
             }
             
             pos += step;
