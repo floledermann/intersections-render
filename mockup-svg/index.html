@@ -258,6 +258,19 @@ let lanePriorities = [
 let state = {
   settings: testcases[0].settings,
   streets: testcases[0].streets,
+  style: {
+    defaultWidth: l => l.width,
+    /*
+    widths: {
+      car: 15,
+      cycle: 70,
+      pedestrian: 5,
+      "car-access": 15,
+      green: 15,
+      parking: 15,
+    }
+    */
+  },
   visualizations: [
     { 
       width: 600,
@@ -284,6 +297,8 @@ function svgEl(tagName, attributes, parent) {
 let algorithms = {
   test1: {
     generate: function(state, options) {
+    
+      let style = state.style;
     
       const INVALID_CUTOFF_ANGLE = 30;
       const STRAIGHT_ANGLE = 45;
@@ -353,7 +368,7 @@ let algorithms = {
         for (let lane of street.lanes) {
           // store basic lane geometry
           let laneDef = Object.assign({}, laneDefaults[lane.type], lane);
-          let laneWidth = laneDef.width || 20;
+          let laneWidth = valOrFunc(style.widths?.[lane.type], lane) || valOrFunc(style.defaultWidth, lane) || 20;
           
           geom.lanesGeom.push({
             id: geom.id + "-lane" + laneCounter,
