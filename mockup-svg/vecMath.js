@@ -66,14 +66,3 @@ export function tangentPoints(p1, r1, p2) {
   ];
 }
 
-export function arrayMin(arr) {
-  return arr.reduce(function (a, v) {
-    return ( a < v ? a : v );
-  });
-}
-
-export function arrayMax(arr) {
-  return arr.reduce(function (a, v) {
-    return ( a > v ? a : v );
-  });
-}
