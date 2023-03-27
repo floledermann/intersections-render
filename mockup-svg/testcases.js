@@ -3,6 +3,18 @@ const testcases = [
     label: "Testcase 1",
     settings: {
     },
+    // globa settings for entire intersection
+    intersection: {
+      expand: {
+        parking: {
+          type: "pedestrian",
+          length: 50 // replaces retractFromCrossing setting
+        }
+      },
+      crossing: {
+        pedestrian: ["straight", "left", "right"] // this should be default
+      }
+    },
     streets: [
       {
         angle: -22,
