@@ -757,7 +757,7 @@ let renderers = {
               //path += `L ${exLane.expandPoly[3].join(",")}`;
               //path += `L ${exLane.expandPoly[2].join(",")}`;
               curve.start(exLane.expandPoly[0], exLane.expandPoly[3]);
-              path += curve.bend(exLane.expandPoly[2]);
+              //path += curve.bend(exLane.expandPoly[2]);
               if (exLane.intersectionPoly) {
                 //path += curve.bend(exLane.intersectionPoly[0]);
                 path += curve.bend(exLane.intersectionPoly[5]);
@@ -793,12 +793,13 @@ let renderers = {
               //path += `L ${exLane.expandPoly[0].join(",")}`;
               //path += `L ${exLane.expandPoly[1].join(",")}`;
               curve.start(exLane.expandPoly[3], exLane.expandPoly[0]);
-              path += curve.bend(exLane.expandPoly[1]);
+              //path += curve.bend(exLane.expandPoly[1]);
               if (exLane.intersectionPoly) {
-                //path += `L ${exLane.intersectionPoly[1].join(",")}`;
+                //path += `L ${exLane.intersectionPoly[2].join(",")}`;
                 //path += `L ${exLane.intersectionPoly[2].join(",")}`;
                 //path += `L ${exLane.intersectionPoly[3].join(",")}`;
-                //path += curve.bend(exLane.intersectionPoly[2]);
+                path += curve.bend(exLane.intersectionPoly[2]);
+                path += curve.bend(exLane.intersectionPoly[3]);
                 //path += curve.bend(exLane.intersectionPoly[3]);
               }
               else {
