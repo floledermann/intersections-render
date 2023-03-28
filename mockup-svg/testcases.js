@@ -7,7 +7,7 @@ const testcases = [
     intersection: {
       expand: {
         parking: {
-          type: ["pedestrian","cycle","car"],
+          type: ["pedestrian","cycle","car"], // 
           length: 50 // replaces retractFromCrossing setting
         }
       },
@@ -45,13 +45,13 @@ const testcases = [
             paint: true,
             orientation: "diagonal",
             width: 37
-          },
+          },/*
           {
             type: "cycle",
             curb: true,
             color: "red",
             oneway: false
-          },
+          },*/
           {
             type: "pedestrian",
             curb: true,
@@ -67,13 +67,13 @@ const testcases = [
             curb: true,
             boundary: "building",
             curbHeight: 15,
-          },
+          },/*
           {
             type: "cycle",
             curb: true,
             color: "red",
             oneway: false
-          },
+          },*/
           {
             type: "parking",
             paint: true,
