@@ -10,6 +10,11 @@ export function arrayMax(arr) {
   });
 }
 
+export function arr(value) {
+  if (Array.isArray(value)) return value;
+  return [value];
+}
+
 export function valOrFunc(arg, ...args) {
   if (typeof arg == "function") {
     return arg.apply(null, args);

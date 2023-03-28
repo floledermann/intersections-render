@@ -7,7 +7,7 @@ const testcases = [
     intersection: {
       expand: {
         parking: {
-          type: "pedestrian",
+          type: ["pedestrian","cycle","car"],
           length: 50 // replaces retractFromCrossing setting
         }
       },
@@ -17,7 +17,7 @@ const testcases = [
     },
     streets: [
       {
-        angle: -22,
+        angle: -30,
         lanes: [
           {
             type: "pedestrian",
