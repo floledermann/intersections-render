@@ -524,16 +524,17 @@ let algorithms = {
               let points = [];
               let lastLane = null;
               for (let lGeom of connectedLanes) {
-                // add corner point for 2-lane case
-                if (connectedLanes.length == 2 && lastLane) {
+                // add corner point
+                if (lastLane && lastLane.streetGeom != lGeom.streetGeom) {
                   points.push(intersect(lastLane.endLeft, lastLane.unit, lGeom.endRight, lGeom.unit));
                 }
                 points.push(lGeom.endRight);
                 points.push(lGeom.endLeft);
-                if (connectedLanes.length == 2 && lastLane) {
-                  points.push(intersect(lastLane.endRight, lastLane.unit, lGeom.endLeft, lGeom.unit));
-                }
                 lastLane = lGeom;
+              }
+              // last corner point, connecting back to first lane
+              if (lastLane.streetGeom != connectedLanes[0].streetGeom) {
+                points.push(intersect(lastLane.endLeft, lastLane.unit, connectedLanes[0].endRight, connectedLanes[0].unit));
               }
               laneGeom.intersectionPoly = points;
               // intersection polygon should always have the same topology of points
