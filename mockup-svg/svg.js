@@ -34,6 +34,12 @@ export function curvedCornerPath(defaultRadius) {
       p1 = p2;
       p2 = p3;
       return path;
+    },
+    straight: function(p3) {
+      let path = " L" + p3.join(",");
+      p1 = p2;
+      p2 = p3;
+      return path;      
     }
   }
 }

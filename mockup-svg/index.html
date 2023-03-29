@@ -668,7 +668,13 @@ let renderers = {
               if (exLane.intersectionPoly) {
                 //path += curve.bend(exLane.intersectionPoly[0]);
                 path += curve.bend(exLane.intersectionPoly[5]);
-                path += curve.bend(exLane.intersectionPoly[4]);
+                if (exLane.connectedLanes.length > 1) {
+                  path += curve.straight(exLane.intersectionPoly[0]);
+                }
+                else {
+                  path += curve.bend(exLane.intersectionPoly[2]);
+                  path += curve.straight(exLane.intersectionPoly[2]);
+                }
                 //path += `L ${exLane.intersectionPoly[0].join(",")}`;
                 //path += `L ${exLane.intersectionPoly[5].join(",")}`;
                 //path += `L ${exLane.intersectionPoly[4].join(",")}`;
@@ -707,7 +713,7 @@ let renderers = {
                 //path += `L ${exLane.intersectionPoly[3].join(",")}`;
                 path += curve.bend(exLane.intersectionPoly[2]);
                 path += curve.bend(exLane.intersectionPoly[3]);
-                //path += curve.bend(exLane.intersectionPoly[3]);
+                path += curve.straight(exLane.intersectionPoly[3]);
               }
               else {
                 path += `L ${exLane.expandPoly[1].join(",")}`;

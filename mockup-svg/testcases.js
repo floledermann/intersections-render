@@ -159,6 +159,12 @@ const testcases = [
             direction: "backward",
           },          
           {
+            type: "cycle",
+            curb: true,
+            color: "red",
+            oneway: false
+          },
+          {
             type: "pedestrian",
             curb: true,
             boundary: "building",
