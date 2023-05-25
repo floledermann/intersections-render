@@ -3,7 +3,7 @@ const testcases = [
     label: "Testcase 1",
     settings: {
     },
-    // globa settings for entire intersection
+    // global settings for entire intersection
     intersection: {
       expand: {
         parking: {

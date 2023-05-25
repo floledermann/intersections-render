@@ -16,9 +16,9 @@
 <section id="notes">
 <h3>To Do</h3>
 <ul>
-<li>construct "expansion" polygon (e.g. "Ohrwascheln" / parking)</li>
-<li>construct crossings (Zebra / bicycle)</li>
 <li>collection of test cases</li>
+<li>construct crossings (Zebra / bicycle)</li>
+<li>what to do with bus and tram?</li>
 <li>align streets by specific lanes</li>
 <li>point features in lanes (trees, traffic islands)</li>
 </ul>
@@ -59,15 +59,12 @@
 
 <script type="module">
 
-import { vMult, vAdd, vSub, vLen, vUnit, 
-         intersect, intersectDist, tangentPoints, 
-         degRad, radDeg,
-         normalizeAngle, normalizeAngle180, normalizeAngle90 } from "./vecMath.js";
-         
-import { arr, arrayMin, arrayMax, valOrFunc } from "./util.js";
-         
-import { svgEl, curvedCornerPath } from "./svg.js";
-         
+import { svgEl } from "./svgUtil.js";
+
+import intersectionTopology from "./intersectionTopology.js";
+import intersectionGeometry from "./intersectionGeometry.js";
+import { render as svgRender } from "./svgRender.js";
+                  
 import testcases from "./testcases.js";
 
 let laneTypes = {
@@ -140,7 +137,7 @@ let laneTypes = {
   }
 }
 
-// extract default vlues into a simple dict structure
+// extract default values into a simple dict structure
 let laneDefaults = 
   Object.fromEntries(
     Object.entries(laneTypes).map(
@@ -162,7 +159,7 @@ let lanePriorities = [
   "car-access",
   "green",
   "parking",
-  // what to do with bus and tram
+  // what to do with bus and tram?
 ];
 
 let state = {
@@ -186,693 +183,24 @@ let state = {
     { 
       width: 600,
       height: 600,
-      algorithm: "test1"
+      // style: ...
     },
     //{ algorithm: "test1" }
   ]
 }
 
-let algorithms = {
-  test1: {
-    generate: function(state, options) {
-    
-      let style = state.style;
-    
-      const INVALID_CUTOFF_ANGLE = 30;
-      const STRAIGHT_ANGLE = 45;
-    
-      let streetsGeom = [];
-      let streetCounter = 1;
-      
-      for (let street of state.streets) {
-        let geom = {
-          id: "street" + streetCounter,
-          index: streetCounter-1,
-          angle: normalizeAngle(street.angle),
-          end: [0,0],
-          length: street.length || 280,
-          lanesGeom: [],
-          street: street,
-          invalid: false,
-        };
-        geom.start = [
-          -geom.length * Math.cos(degRad(geom.angle)),
-          -geom.length * Math.sin(degRad(geom.angle))
-        ];
-        geom.vector = vSub(geom.end, geom.start);
-        geom.unit = vMult(geom.vector, 1/geom.length);
-        geom.normal = [geom.unit[1], -geom.unit[0]];
-        
-        streetsGeom.push(geom);
-        streetCounter++;
-      }
-      
-      for (let geom of streetsGeom) {
-        let street = geom.street;
-        // figure out relationship of other streets
-        // order by angle, check if left, straight continuation or right
-        let otherStreets = [];
-        let index = 0;
-        for (let s of state.streets) {
-          if (s == street) {
-            index++;
-            continue;
-          }
-          let relAngle = normalizeAngle(s.angle - street.angle);
-          let rel = (relAngle <= INVALID_CUTOFF_ANGLE || relAngle >= 360 - INVALID_CUTOFF_ANGLE) ? "invalid" :
-                    (relAngle >= STRAIGHT_ANGLE && relAngle <= 180 - STRAIGHT_ANGLE) ? "left" :
-                    (relAngle >= 180 - STRAIGHT_ANGLE && relAngle <= 180 + STRAIGHT_ANGLE) ? "straight" :
-                    "right";
-          if (rel == "invalid") {
-            console.warn("Invalid crossing angle: " + relAngle + "°");
-            geom.invalid = true;
-          }
+function generateGeometry(streets, options) {
 
-          otherStreets.push({
-            rel,
-            relAngle,
-            streetGeom: streetsGeom[index]
-          });
-          index++;
-        }
-        otherStreets.filter(a => a.rel != "invalid")
-        otherStreets.sort((a,b) => a.relAngle-b.relAngle);
+  let streetsGeom = intersectionTopology(streets, options);
 
-        geom.otherStreets = otherStreets;
-        
-        let streetWidth = 0;
-        let laneCounter = 1;
-        
-        for (let lane of street.lanes) {
-          // store basic lane geometry
-          let laneDef = Object.assign({}, laneDefaults[lane.type], lane);
-          let laneWidth = valOrFunc(style.widths?.[lane.type], lane) || valOrFunc(style.defaultWidth, lane) || 20;
-          
-          geom.lanesGeom.push({
-            id: geom.id + "-lane" + laneCounter,
-            index: laneCounter-1,
-            streetIndex: geom.index,
-            width: laneWidth,
-            offset: streetWidth,
-            unit: geom.unit,
-            normal: geom.normal,
-            lane: lane,
-            streetGeom: geom,
-            connectedLanes: new Set(),
-            stoppedBy: [],
-            priority: lanePriorities.indexOf(lane.type)
-          });
-          
-          streetWidth += laneWidth;
-          laneCounter++;
-        }
-        
-        geom.width = streetWidth;
-        
-        let lastLane = null;
-        for (let laneGeom of geom.lanesGeom) {
-          // start left, check clockwise with other streets
-          laneGeom.offset -= streetWidth/2;
-          Object.assign(laneGeom, {
-            startLeft: vAdd(geom.start, geom.normal, -laneGeom.offset),
-            startRight: vAdd(geom.start, geom.normal, -laneGeom.offset-laneGeom.width),
-            //endRight: vAdd(geom.end, geom.normal, -laneGeom.offset),
-            //endLeft: vAdd(geom.end, geom.normal, -laneGeom.offset-laneGeom.width),
-            // we can use this to sort all lanes going around the crossing
-            // use lane position as fractional part added to street angle
-            clockwiseOrder: geom.angle + (1-(laneGeom.offset/streetWidth)),
-            laneLeft: lastLane,
-            laneRight: null
-          });
-          if (lastLane) {
-            lastLane.laneRight = laneGeom;
-          }
-          lastLane = laneGeom;
-        }
-        
-        // wire expansion areas
-        for (let laneGeom of geom.lanesGeom) {
-          let expandConfig = state.intersection?.expand?.[laneGeom.lane.type];
-          if (!expandConfig) continue;
-          for (let type of arr(expandConfig.type)) {
-            if (laneGeom.laneLeft?.lane.type == type && !laneGeom.laneLeft.expandRight) {
-              laneGeom.laneLeft.expandRight = laneGeom;
-              laneGeom.expandedLeft = laneGeom.laneLeft;
-            }
-            if (laneGeom.laneRight?.lane.type == type && !laneGeom.laneRight.expandLeft) {
-              laneGeom.laneRight.expandLeft = laneGeom;
-              laneGeom.expandedRight = laneGeom.laneRight;
-            }
-            laneGeom.expanded = laneGeom.expandedRight || laneGeom.expandedLeft;
-            if (laneGeom.expanded) break;
-          }
-        }
-      }
-      
-      streetsGeom.sort((a,b) => a.angle-b.angle);
-      
-      // first pass finished 
-      //   - relative street angles
-      //   - angle classification (left, stright, right, invalid)
-      //   - lane y' position
-      
-      // assumption: each lane has only one continuation in each other street
+  console.log(streetsGeom);
 
-      // second pass:
-      //   - establish lanes x' end
-
-      
-      // connect lanes in deceasing order of priority
-      // go clockwise and counter-clockwise around all lanes, 
-      // and connect lanes not separated by higher priority lane
-      
-      // add first street again at last position to ensure 
-      // comparison across all corners
-      let streetsGeomWrap = Array.from(streetsGeom);
-      streetsGeomWrap.push(streetsGeom[0]);
-      // clockwise and counter-clockwise order
-      let streetsGeomOrder = [streetsGeomWrap, Array.from(streetsGeomWrap).reverse()];
-      
-      for (let laneType of lanePriorities) {
-        let targetPriority = lanePriorities.indexOf(laneType);
-        let reverse = true;
-        for (let order of streetsGeomOrder) {
-          let lastLane = null;
-          // lanes that need to be passed before connecting to other lanes
-          let lanesToPass = new Set();
-          // higher-priority lanes that potentially separate the lane from connecting
-          // TODO: is this the same as lanesToPass? - I can't remember, test this ;)
-          let separatingLanes = new Set();
-          // lanes in parallel to the current one 
-          // that "shield" the lane from being stopped
-          let shieldingLanes = []; 
-          let connectedLanes = null;
-          let laneStack = []; // a stack of lanes to pass
-          for (let streetGeom of order) {
-            let lanesGeom = streetGeom.lanesGeom;
-            if (reverse) lanesGeom = Array.from(lanesGeom).reverse();
-            for (let laneGeom of lanesGeom) {
-//if (laneGeom.id == "street2-lane5" && laneGeom.priority == targetPriority && !reverse) debugger;
-              // higher-priority lane -> set up passing and shielding
-              if (laneGeom.priority < targetPriority) {
-                if (lastLane && lanesToPass.size == 0 && (lastLane.streetGeom != laneGeom.streetGeom)) { 
-                  // TODO: fix case when going around 0° (needs one more iteration "around")
-                  //let index = reverse ? 0 : 1;
-                  //if ((reverse && lastLane.stoppedBy.length == 0) ||
-                  //    (!reverse && lastLane.stoppedBy.length == 1)) {
-                  
-                    // for now, just use the first lane we encounter
-                    // in a crossing street as the stopping lane, 
-                    // in each direction
-                    // first higher-priority lane -> set stoppedBy
-                    
-                    // only if the other lane is not stopped by one of our shielding lanes
-                    if (!laneGeom.stoppedBy.some(l => shieldingLanes.includes(l))) {
-                      lastLane.stoppedBy.push(laneGeom);
-                    }
-                  //}
-                }
-                // higher-priority lanes in parallel might shield the lane from being stopped
-                if (lastLane && lastLane.streetGeom == laneGeom.streetGeom) {
-                  shieldingLanes.push(laneGeom);
-                }
-                // shielding lanes stopped by current lane? -> remove
-                shieldingLanes = shieldingLanes.filter(sl => {
-                  sl.stoppedBy.includes(laneGeom);
-                })
-                // higher-priority lane -> must be passed first
-                if (lanesToPass.has(laneGeom)) {
-                  // already in lanesToPass -> remove
-                  lanesToPass.delete(laneGeom);                
-                }
-                else {
-                  // not in lanesToPass -> add this and all connected lanes
-                  // to lanesToPass
-                  laneGeom.connectedLanes.forEach(l => {
-                    lanesToPass.add(l);
-                  });
-                  /*
-                  laneGeom.stoppedBy.forEach(l => {
-                    lanesToPass.add(l);
-                  });
-                  */
-                  // immediately remove the current lane (we have passed it)
-                  lanesToPass.delete(laneGeom);
-                }
-                if (separatingLanes.has(laneGeom)) {
-                  separatingLanes.delete(laneGeom);
-                  if (separatingLanes.size == 0) {
-                    ({lastLane, lanesToPass, separatingLanes} = laneStack.pop());
-                  }
-                }
-              }
-              else {
-                if (laneGeom.lane.type == laneType) {
-                  if (lanesToPass.size > 0) {
-                    // still lanes to clear, so push on stack and start new connected lanes
-                    laneStack.push({lastLane, lanesToPass, separatingLanes});
-                    separatingLanes = new Set(lanesToPass);
-                    lanesToPass = new Set();
-                    lastLane = null;
-                    connectedLanes = null;
-                  }
-                  // if connected lanes have already been found on reverse pass
-                  // add to those
-                  if (!connectedLanes) {
-                    connectedLanes = lastLane?.connectedLanes || laneGeom.connectedLanes;
-                  }
-                  if (!connectedLanes.has(laneGeom)) {
-                    connectedLanes.add(laneGeom);
-                  }
-                  laneGeom.connectedLanes = connectedLanes;
-                  shieldingLanes = [];
-                  lastLane = laneGeom;
-                }
-              }
-            }
-          }
-          reverse = false;
-        }
-      }
-      
-      console.log(streetsGeom);
-
-      for (let streetGeom of streetsGeom) {
-        for (let laneGeom of streetGeom.lanesGeom) {
-          // convert set to array
-          laneGeom.connectedLanes = Array.from(laneGeom.connectedLanes);
-          // disregard all "connected" lanes in the same street, 
-          // including the current lane
-          let connectedLanes = laneGeom.connectedLanes.filter(l => {
-            return l.streetGeom != laneGeom.streetGeom;
-          });
-          if (connectedLanes.length == 0 || laneGeom.stoppedBy.length > 0) {
-            // lane ends
-            // find stop lane that actually stops the lane
-            //laneGeom.connectedLanes = [];
-            if (laneGeom.stoppedBy.length > 0) {
-              let stopLanes = laneGeom.stoppedBy.map(otherLane => ({
-                lane: otherLane,
-                length: Math.min(
-                  intersectDist(laneGeom.startLeft, laneGeom.unit, otherLane.startLeft, otherLane.unit),
-                  intersectDist(laneGeom.startLeft, laneGeom.unit, otherLane.startRight, otherLane.unit),
-                  intersectDist(laneGeom.startRight, laneGeom.unit, otherLane.startLeft, otherLane.unit),
-                  intersectDist(laneGeom.startRight, laneGeom.unit, otherLane.startRight, otherLane.unit),
-                )
-              })).sort((a,b) => a.length - b.length);
-              laneGeom.stopLane = stopLanes[0].lane;
-              laneGeom.length = stopLanes[0].length;
-            }
-          }
-          else {
-            // lane connected
-            laneGeom.length = arrayMin(connectedLanes.map(otherLane => {
-              let rel = laneGeom.streetGeom.otherStreets.find(r => r.streetGeom == otherLane.streetGeom)?.rel;
-              if (rel == "straight") {
-                // if it is also connected to a non-straight lane both left and right,
-                // ignore the straight intersection
-                // (otherwise may intersect at a very shallow angle,
-                //  degenerating the intersection point)
-                // TODO: this should look only to the leftmost and rightmost connecting lanes
-                //       (independent of "rel" classification)
-                if (connectedLanes.some(l => laneGeom.streetGeom.otherStreets.find(r => r.streetGeom == l.streetGeom).rel == "left") &&
-                    connectedLanes.some(l => laneGeom.streetGeom.otherStreets.find(r => r.streetGeom == l.streetGeom).rel == "right")) {
-                  return Infinity;
-                }
-              }
-              return Math.min(
-                intersectDist(laneGeom.startRight, laneGeom.unit, otherLane.startLeft, otherLane.unit),
-                intersectDist(laneGeom.startLeft, laneGeom.unit, otherLane.startRight, otherLane.unit),
-              );
-            }));
-            //console.log(laneGeom.length);
-          }
-          laneGeom.endLeft = vAdd(laneGeom.startLeft, laneGeom.unit, laneGeom.length);
-          laneGeom.endRight = vAdd(laneGeom.startRight, laneGeom.unit, laneGeom.length);
-        }
-      }
-      
-      // find intersection polygons
-      for (let streetGeom of streetsGeom) {
-        for (let laneGeom of streetGeom.lanesGeom) {
-          if (laneGeom.connectedLanes?.length > 1) {
-            if (!laneGeom.intersectionPoly) {
-              // sort lanes in clockwise direction relative to the current lane
-              let connectedLanes = Array.from(laneGeom.connectedLanes).sort((a,b) => {
-                return normalizeAngle(a.clockwiseOrder - laneGeom.clockwiseOrder) - normalizeAngle(b.clockwiseOrder - laneGeom.clockwiseOrder);
-              });
-              let points = [];
-              let lastLane = null;
-              for (let lGeom of connectedLanes) {
-                // add corner point
-                if (lastLane && lastLane.streetGeom != lGeom.streetGeom) {
-                  points.push(intersect(lastLane.endLeft, lastLane.unit, lGeom.endRight, lGeom.unit));
-                }
-                points.push(lGeom.endRight);
-                points.push(lGeom.endLeft);
-                lastLane = lGeom;
-              }
-              // last corner point, connecting back to first lane
-              if (lastLane.streetGeom != connectedLanes[0].streetGeom) {
-                points.push(intersect(lastLane.endLeft, lastLane.unit, connectedLanes[0].endRight, connectedLanes[0].unit));
-              }
-              laneGeom.intersectionPoly = points;
-              // intersection polygon should always have the same topology of points
-              // in relation to the lane -> compute for every lane
-              for (let lGeom of connectedLanes) {
-                //lGeom.intersectionPoly = points;
-              }
-            }
-          }
-          else {
-           // no connected lanes -> needs stop polygon
-            if (laneGeom.stopLane) {
-            
-              let points = [];
-              // check which side is closer
-              let leftDist = intersectDist(laneGeom.startLeft, laneGeom.unit, laneGeom.stopLane.startLeft, laneGeom.stopLane.unit);
-              let rightDist = intersectDist(laneGeom.startLeft, laneGeom.unit, laneGeom.stopLane.startRight, laneGeom.stopLane.unit);
-              let nearSide = (leftDist > rightDist) ? "Right" : "Left";
-              
-              // emulate points enumeration of proper intersection polygon
-              points.push(laneGeom.endRight);
-              points.push(laneGeom.endLeft);
-              points.push(intersect(laneGeom.endLeft, laneGeom.unit, laneGeom.stopLane["end" + nearSide], laneGeom.stopLane.unit));
-              //points.push(points[points.length-1]);
-              points.push(intersect(laneGeom.endRight, laneGeom.unit, laneGeom.stopLane["end" + nearSide], laneGeom.stopLane.unit));
-              points.push(points[points.length-1]);
-              points.push(points[points.length-1]);
-              //points.push(laneGeom.endRight);
-              laneGeom.intersectionPoly = points;  
-            }
-          }
-          
-          // geometry of expansion polygons
-          //laneGeom.retractedLength = laneGeom.length;
-          if (laneGeom.expanded) {
-            let retractLength = state.intersection?.expand?.[laneGeom.lane.type]?.length;
-            laneGeom.length = laneGeom.length - retractLength;
-            laneGeom.expandPoly = [
-              vAdd(laneGeom.startLeft, laneGeom.unit, laneGeom.length),
-              laneGeom.endLeft,
-              laneGeom.endRight,
-              vAdd(laneGeom.startRight, laneGeom.unit, laneGeom.length),
-            ];
-          }
-        }
-      }
-      
-      return streetsGeom;
-    }
-    
-  },
-  test2: {
-  }
+  streetsGeom = intersectionGeometry(streetsGeom, options);
+  
+  return streetsGeom;
 }
+    
 
-let renderers = {
-
-  svgLaneBoxes: (streetsGeom, options) => {
-    for (let sGeom of streetsGeom) {
-      //if (sGeom.invalid) continue;
-      
-      let lanesGroup = svgEl("g", {
-        "class": "lanes",
-        transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle}) translate(0,0)`,
-      }, options.parent);
-      for (let lGeom of sGeom.lanesGeom) {
-        svgEl("rect", {
-          x: 0,
-          y: lGeom.offset,
-          height: lGeom.width,
-          width: lGeom.length,
-          "class": "lane " + lGeom.lane.type,
-          fill: "none",
-          //"stroke": "#000000",
-          "stroke-width": 0.5,
-          "stroke-dasharray": "2 4"
-        }, lanesGroup);      
-      }
-      
-    }
-  },
-  
-  svgIntersectionPolygons: (streetsGeom, options) => {
-    // keep track of renderer lanes - render only one poly per connected lanes
-    let rendered = [];
-    for (let sGeom of streetsGeom) {
-      for (let lGeom of sGeom.lanesGeom) {
-        if (lGeom.intersectionPoly && !rendered.includes(lGeom)) {
-          svgEl("polygon", {
-            points: lGeom.intersectionPoly.map(p => p.join(",")).join(" "),
-            "class": "intersection " + lGeom.lane.type,
-            fill: "none",
-            //"stroke": "#000000",
-            "stroke-width": 0.5,
-            "stroke-dasharray": "2 4"
-          }, options.parent);   
-        }
-        if (lGeom.expandPoly) {
-          svgEl("polygon", {
-            points: lGeom.expandPoly.map(p => p.join(",")).join(" "),
-            "class": "retraction " + lGeom.lane.type,
-            fill: "none",
-            //"stroke": "#000000",
-            "stroke-width": 0.5,
-            "stroke-dasharray": "2 4"
-          }, options.parent);   
-        }
-        lGeom.connectedLanes.forEach(l => rendered.push(l));
-        //rendered.push(lGeom.intersectionPoly);
-      }
-      
-    }
-  },
-  
-  svgCurbs: (streetsGeom, options) => {
-    let rendered = [];
-    let curve = curvedCornerPath(8);
-    for (let sGeom of streetsGeom) {
-      for (let lGeom of sGeom.lanesGeom) {
-        if (lGeom.lane.type == "pedestrian") {
-          if (lGeom.laneRight) {
-            let path = `M ${lGeom.startRight.join(",")}` ;
-            
-            if (lGeom.expandRight) {
-              let exLane = lGeom.expandRight;
-              path += `L ${exLane.expandPoly[0].join(",")}`;
-              //path += `L ${exLane.expandPoly[3].join(",")}`;
-              //path += `L ${exLane.expandPoly[2].join(",")}`;
-              curve.start(exLane.expandPoly[0], exLane.expandPoly[3]);
-              //path += curve.bend(exLane.expandPoly[2]);
-              if (exLane.intersectionPoly) {
-                //path += curve.bend(exLane.intersectionPoly[0]);
-                path += curve.bend(exLane.intersectionPoly[5]);
-                if (exLane.connectedLanes.length > 1) {
-                  path += curve.straight(exLane.intersectionPoly[0]);
-                }
-                else {
-                  path += curve.bend(exLane.intersectionPoly[2]);
-                  path += curve.straight(exLane.intersectionPoly[2]);
-                }
-                //path += `L ${exLane.intersectionPoly[0].join(",")}`;
-                //path += `L ${exLane.intersectionPoly[5].join(",")}`;
-                //path += `L ${exLane.intersectionPoly[4].join(",")}`;
-              }
-              else {
-                path += `L ${exLane.expandPoly[1].join(",")}`;
-              }
-            }
-            else {
-              path += `L ${lGeom.endRight.join(",")}`;
-              if (lGeom.intersectionPoly) {
-                path += `L ${lGeom.intersectionPoly[5].join(",")}`;
-              }
-            }
-            
-            svgEl("path", {
-              d: path,
-              fill: "none",
-              "stroke": "#333333",
-              "stroke-width": 1,
-            }, options.parent);
-          }
-          if (lGeom.laneLeft) {
-            let path = `M ${lGeom.startLeft.join(",")}` ;
-            
-            if (lGeom.expandLeft) {
-              let exLane = lGeom.expandLeft;
-              path += `L ${exLane.expandPoly[3].join(",")}`;
-              //path += `L ${exLane.expandPoly[0].join(",")}`;
-              //path += `L ${exLane.expandPoly[1].join(",")}`;
-              curve.start(exLane.expandPoly[3], exLane.expandPoly[0]);
-              //path += curve.bend(exLane.expandPoly[1]);
-              if (exLane.intersectionPoly) {
-                //path += `L ${exLane.intersectionPoly[2].join(",")}`;
-                //path += `L ${exLane.intersectionPoly[2].join(",")}`;
-                //path += `L ${exLane.intersectionPoly[3].join(",")}`;
-                path += curve.bend(exLane.intersectionPoly[2]);
-                path += curve.bend(exLane.intersectionPoly[3]);
-                path += curve.straight(exLane.intersectionPoly[3]);
-              }
-              else {
-                path += `L ${exLane.expandPoly[1].join(",")}`;
-              }
-            }
-            else {
-              path += `L ${lGeom.endLeft.join(",")}`;
-              if (lGeom.intersectionPoly) {
-                path += `L ${lGeom.intersectionPoly[2].join(",")}`;
-              }
-            }
-            
-            svgEl("path", {
-              d: path,
-              fill: "none",
-              "stroke": "#333333",
-              "stroke-width": 1,
-            }, options.parent);
-          }
-        }
-        /*
-        if (lGeom.expandPoly) {
-          svgEl("polygon", {
-            points: lGeom.expandPoly.map(p => p.join(",")).join(" "),
-            "class": "retraction " + lGeom.lane.type,
-            fill: "none",
-            //"stroke": "#000000",
-            "stroke-width": 0.5,
-            "stroke-dasharray": "2 4"
-          }, options.parent);   
-        }
-        */
-        rendered.push(lGeom.intersectionPoly);
-      }
-      
-    }
-  },
-  
-  svgLaneMarkings: (streetsGeom, options) => {
-    for (let sGeom of streetsGeom) {
-      let lanesGroup = svgEl("g", {
-        "class": "lanes",
-        transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle}) translate(0,0)`, // ${-sGeom.width/2}
-      }, options.parent);
-      for (let lGeom of sGeom.lanesGeom) {
-        if (lGeom.lane.type == "parking") {
-          let laneGroup = svgEl("g", {
-            "class": "lane " + lGeom.lane.type,
-            transform: `translate(0,${lGeom.offset + lGeom.width/2})`,
-          }, lanesGroup);
-          
-          let strokeWidth = 3;
-          let pos = 0;
-          let w = lGeom.width;
-          
-          let accessSide = lGeom.lane.accessSide || "left";
-          if (!lGeom.lane.accessSide) {
-            if (lGeom.laneLeft?.lane.type != "car") {
-              if (lGeom.laneRight?.lane.type == "car") {
-                accessSide = "right";
-              }
-              else {
-                // no car lane to left or right
-                accessSide = "none";
-              }
-            }            
-          }
-          let direction = lGeom.lane.direction || "forward";
-          // step length of various parking orientations as a factor of width
-          let baseStep = {parallel:2.2,diagonal:0.75,orthogonal:0.5}[lGeom.lane.orientation||"parallel"];
-          baseStep *= lGeom.width;
-          // adjust so that hashes fit exactly within available space
-          // (distribute remainder)
-          let lengthAdjust = (lGeom.lane.orientation == "diagonal") ? -1 : 1;
-          let remainder = (lGeom.length-strokeWidth-lengthAdjust) % baseStep;
-          let numSteps = Math.floor((lGeom.length-strokeWidth-lengthAdjust) / baseStep);
-          let step = baseStep + remainder / numSteps;
-          let stepCount = 0;
-          while (pos < lGeom.length) {
-            switch (lGeom.lane.orientation) {
-              case "diagonal":
-                if (stepCount > 0) {
-                  svgEl("line", {x1: pos-baseStep, y1: -w/2, x2: pos, y2: w/2, stroke: "#bbf", "stroke-width": strokeWidth}, laneGroup);
-                  if (accessSide != "none") {
-                  
-                    let y = w/2-1; //-strokeWidth/2;
-                    let dx = baseStep-strokeWidth/2;
-                    if (accessSide == "left") {
-                      y *= -1;
-                      dx = 0;
-                    }
-                    svgEl("line", {x1: pos-baseStep-strokeWidth+dx, y1: y, x2: pos-baseStep+5+dx, y2: y, stroke: "#bbf", "stroke-width": strokeWidth}, laneGroup);
-                  }
-                }
-                break;
-              case "orthogonal":
-                svgEl("circle", {r: strokeWidth, cx: pos, cy: 0, fill: "#99f"}, laneGroup);
-                break;
-              default: //parallel
-                  svgEl("line", {x1: pos+strokeWidth/2, y1: -w/2, x2: pos+strokeWidth/2, y2: w/2, stroke: "#bbf", "stroke-width": strokeWidth}, laneGroup);
-                  if (accessSide != "none") {
-                    let x1=4, x2=4;
-                    if (stepCount == 0) x1=1.5;
-                    if (stepCount == numSteps) x2=1.5;
-                    let y = w/2-strokeWidth/2;
-                    if (accessSide == "left") y *= -1;
-                    svgEl("line", {x1: pos-x1+strokeWidth/2, y1: y, x2: pos+x2+strokeWidth/2, y2: y, stroke: "#bbf", "stroke-width": strokeWidth}, laneGroup);
-                  }                
-            }
-            
-            pos += step;
-            stepCount++;
-          }
-        }
-      }
-    }       
-  },
-  
-  svgStreetBoxes: (streetsGeom, options) => {    
-    for (let sGeom of streetsGeom) {
-      //svgEl("circle", {r: 3, cx: sGeom.start[0], cy: sGeom.start[1], fill: "#f00"}, options.parent);
-      //svgEl("circle", {r: 3, cx: sGeom.end[0], cy: sGeom.end[1], fill: "#f00"}, options.parent);
-      svgEl("rect", {
-        transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle})`,
-        x: 0,
-        y: -sGeom.width/2-0.5,
-        height: sGeom.width + 1,
-        width: sGeom.length,
-        fill: "none",
-        "stroke": sGeom.invalid ? "#ff0000" : "none",
-        "stroke-width": sGeom.invalid ? 2 : 0.2,
-        "stroke-dasharray": "8 3"
-      }, options.parent);        
-    }
-  },
-  
-  svgLanesLabels: (streetsGeom, options) => {
-    let fontSize = 10;
-    for (let sGeom of streetsGeom) {
-      let laneGroup = svgEl("g", {
-        "class": "lanes",
-        transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle})`, // ${-sGeom.width/2}
-      }, options.parent);
-      let flipped = Math.abs(normalizeAngle180(sGeom.angle)) <= 90;
-      for (let lGeom of sGeom.lanesGeom) {
-        let textEl = svgEl("text", {
-          transform: `translate(0,${lGeom.offset + lGeom.width/2}) rotate(${flipped ? 0 : 180})`,
-          fill: "#000",
-          x: flipped ? 5 : -5,
-          y: fontSize/2 - 2,
-          "text-anchor": flipped ? "start" : "end",
-          "font-size": fontSize
-        }, laneGroup);
-        textEl.innerHTML = lGeom.id;
-      }
-    }
-  }
-
-}
 
 function buildUI(state, wrapper, update) {
 
@@ -969,15 +297,23 @@ function buildSVG(state, wrapper, update) {
     
     let i=0;
     
+    // compose options for geometry generation from various bits
+    // TODO: clean this up
+    let options = {
+      ...state.intersection,
+      laneDefaults,
+      lanePriorities,
+      style: state.style
+    };
+    
     for (let viz of state.visualizations) {
+    
+      let streetsGeom = generateGeometry(state.streets, options);
+      
       svgs[i].innerHTML = "";
-      let streetsGeom = algorithms[viz.algorithm].generate(state);
-      renderers.svgLaneBoxes(streetsGeom, { parent: svgs[i] });
-      renderers.svgIntersectionPolygons(streetsGeom, { parent: svgs[i] });
-      renderers.svgLaneMarkings(streetsGeom, { parent: svgs[i] });
-      renderers.svgCurbs(streetsGeom, { parent: svgs[i] });
-      renderers.svgStreetBoxes(streetsGeom, { parent: svgs[i] });    
-      //renderers.svgLanesLabels(streetsGeom, { parent: svgs[i] });    
+      svgRender(streetsGeom, svgs[i], {
+        labels: false,
+      });      
       i++;
     }
   }
