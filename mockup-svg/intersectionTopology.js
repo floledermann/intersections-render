@@ -66,6 +66,11 @@ export default function(streets, options) {
     streetCounter++;
   }
   
+  // first pass:
+  //   - relative street angles
+  //   - angle classification (left, stright, right, invalid)
+  //   - lane y' position
+
   for (let geom of streetsGeom) {
     let street = geom.street;
     // figure out relationship of other streets
@@ -101,7 +106,7 @@ export default function(streets, options) {
     
     let streetWidth = 0;
     let laneCounter = 1;
-    
+
     for (let lane of street.lanes) {
       // store basic lane geometry
       let laneDef = Object.assign({}, options.laneDefaults[lane.type], lane);
@@ -168,23 +173,25 @@ export default function(streets, options) {
     }
   }
   
-  streetsGeom.sort((a,b) => a.angle-b.angle);
+  // second pass:
+  streetsGeom = calculateLaneTopology(streetsGeom, options);
   
-  // first pass finished 
-  //   - relative street angles
-  //   - angle classification (left, stright, right, invalid)
-  //   - lane y' position
+  return streetsGeom;
   
+}
+
+function calculateLaneTopology(streetsGeom, options) {
+
+  // establish lanes connectivity, and which lane stops it
+ 
   // assumption: each lane has only one continuation in each other street
 
-  // second pass:
-  //   - establish lanes x' end
-
-  
-  // connect lanes in deceasing order of priority
+  // connect lanes in decreasing order of priority
   // go clockwise and counter-clockwise around all lanes, 
   // and connect lanes not separated by higher priority lane
   
+  streetsGeom.sort((a,b) => a.angle-b.angle);
+
   // add first street again at last position to ensure 
   // comparison across all corners
   let streetsGeomWrap = Array.from(streetsGeom);
@@ -196,6 +203,7 @@ export default function(streets, options) {
     let targetPriority = options.lanePriorities.indexOf(laneType);
     let reverse = true;
     for (let order of streetsGeomOrder) {
+      // last lane of current type processed
       let lastLane = null;
       // lanes that need to be passed before connecting to other lanes
       let lanesToPass = new Set();
@@ -212,6 +220,7 @@ export default function(streets, options) {
         if (reverse) lanesGeom = Array.from(lanesGeom).reverse();
         for (let laneGeom of lanesGeom) {
 //if (laneGeom.id == "street2-lane5" && laneGeom.priority == targetPriority && !reverse) debugger;
+
           // higher-priority lane -> set up passing and shielding
           if (laneGeom.priority < targetPriority) {
             if (lastLane && lanesToPass.size == 0 && (lastLane.streetGeom != laneGeom.streetGeom)) { 
@@ -265,7 +274,9 @@ export default function(streets, options) {
               }
             }
           }
+          // same or lower priority lane
           else {
+            // same priority
             if (laneGeom.lane.type == laneType) {
               if (lanesToPass.size > 0) {
                 // still lanes to clear, so push on stack and start new connected lanes
@@ -295,5 +306,7 @@ export default function(streets, options) {
   }
   
   return streetsGeom;
-  
+
+
 }
+
