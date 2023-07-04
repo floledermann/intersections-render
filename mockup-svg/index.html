@@ -162,10 +162,13 @@ let lanePriorities = [
   // what to do with bus and tram?
 ];
 
+let testcase = testcases[0];
+//testcase = testcases[testcases.length-1];
+
 let state = {
-  settings: testcases[0].settings,
-  streets: testcases[0].streets,
-  intersection: testcases[0].intersection,
+  settings: testcase.settings,
+  streets: testcase.streets,
+  intersection: testcase.intersection,
   style: {
     defaultWidth: l => l.width,
     /*

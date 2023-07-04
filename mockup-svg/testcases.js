@@ -1,6 +1,6 @@
 const testcases = [
-  {
-    label: "Testcase 1",
+  { // testcase
+    label: "Default Testcase",
     settings: {
     },
     // global settings for entire intersection
@@ -173,7 +173,198 @@ const testcases = [
         ],
       },
     ],
-  }, // end of testcase 1
+  }, // end of testcase
+
+  {
+    label: "Bend with single car lane continuing",
+    streets: [
+      {
+        angle: -10,
+        lanes: [
+          {
+            type: "car",
+          },          
+        ],
+      },
+      {
+        angle: 190,
+        lanes: [
+          {
+            type: "car",
+          },          
+        ],
+      },
+    ],
+  }, // end of testcase
+
+  {
+    label: "Bend with single lane, changing type car -> cycle",
+    streets: [
+      {
+        angle: -10,
+        lanes: [
+          {
+            type: "car",
+          },          
+        ],
+      },
+      {
+        angle: 190,
+        lanes: [
+          {
+            type: "cycle",
+          },          
+        ],
+      },
+    ],
+  }, // end of testcase
+
+  { // testcase
+    label: "Bend with double car lane continuing",
+    comment: "Weird extension of intersection polygon for outer lane",
+    streets: [
+      {
+        angle: -10,
+        lanes: [
+          {
+            type: "car",
+          },          
+          {
+            type: "car",
+          },          
+        ],
+      },
+      {
+        angle: 190,
+        lanes: [
+          {
+            type: "car",
+          },          
+          {
+            type: "car",
+          },          
+        ],
+      },
+    ],
+  }, // end of testcase
+
+  { // testcase
+    label: "Bend with two lane types, car + cycle",
+    streets: [
+      {
+        angle: -10,
+        lanes: [
+          {
+            type: "car",
+          },          
+          {
+            type: "cycle",
+          },          
+        ],
+      },
+      {
+        angle: 190,
+        lanes: [
+          {
+            type: "cycle",
+          },          
+          {
+            type: "car",
+          },          
+        ],
+      },
+    ],
+  }, // end of testcase
+
+  { // testcase
+    label: "Bend with two lane types, switching sides, car + cycle",
+    passes: false,
+    streets: [
+      {
+        angle: -10,
+        lanes: [
+          {
+            type: "car",
+          },          
+          {
+            type: "cycle",
+          },          
+        ],
+      },
+      {
+        angle: 190,
+        lanes: [
+          {
+            type: "car",
+          },          
+          {
+            type: "cycle",
+          },          
+        ],
+      },
+    ],
+  }, // end of testcase
+
+  {
+    label: "3-way, single car lane continuing",
+    streets: [
+      {
+        angle: -10,
+        lanes: [
+          {
+            type: "car",
+          },          
+        ],
+      },
+      {
+        angle: 80,
+        lanes: [
+          {
+            type: "car",
+          },          
+        ],
+      },
+      {
+        angle: 190,
+        lanes: [
+          {
+            type: "car",
+          },          
+        ],
+      },
+    ],
+  }, // end of testcase
+
+  {
+    label: "3-way, single car lane bend + cycle",
+    passes: false,
+    streets: [
+      {
+        angle: -10,
+        lanes: [
+          {
+            type: "car",
+          },          
+        ],
+      },
+      {
+        angle: 80,
+        lanes: [
+          {
+            type: "cycle",
+          },          
+        ],
+      },
+      {
+        angle: 190,
+        lanes: [
+          {
+            type: "car",
+          },          
+        ],
+      },
+    ],
+  }, // end of testcase
 
 
 ];
