@@ -1,15 +1,27 @@
 import { svgEl, curvedCornerPath } from "./svgUtil.js";
 
 export function render(streetsGeom, parent, options) {
-  renderLaneBoxes(streetsGeom, parent);
-  renderIntersectionPolygons(streetsGeom, parent);
-  renderLaneMarkings(streetsGeom, parent);
-  renderCurbs(streetsGeom, parent);
-  renderInvalidStreetBoxes(streetsGeom, parent);
-  if (options.labels !== false) renderLanesLabels(streetsGeom, parent);      
+  
+  options.laneColors = Object.assign({
+    car: "#dddddd",
+    pedestrian: "#cccccc",
+    cycle: "#ffdddd",
+    parking: "#eeeeff", 
+  }, options.laneColors);
+  
+  options = Object.assign({
+    
+  }, options);
+  
+  renderLaneBoxes(streetsGeom, parent, options);
+  renderIntersectionPolygons(streetsGeom, parent, options);
+  renderLaneMarkings(streetsGeom, parent, options);
+  renderCurbs(streetsGeom, parent, options);
+  renderInvalidStreetBoxes(streetsGeom, parent, options);
+  if (options.labels !== false) renderLanesLabels(streetsGeom, parent, options);      
 }
 
-function renderLaneBoxes(streetsGeom, parent) {
+function renderLaneBoxes(streetsGeom, parent, options) {
   for (let sGeom of streetsGeom) {
     //if (sGeom.invalid) continue;
     
@@ -24,17 +36,17 @@ function renderLaneBoxes(streetsGeom, parent) {
         height: lGeom.width,
         width: lGeom.length,
         "class": "lane " + lGeom.lane.type,
-        fill: "none",
-        //"stroke": "#000000",
-        "stroke-width": 0.5,
-        "stroke-dasharray": "2 4"
+        fill: options.laneColors[lGeom.lane.type],
+        "stroke": options.outlines ? "rgba(0,0,0,0.2)" : options.laneColors[lGeom.lane.type],
+        "stroke-width": options.outlines ? 0.5 : 0.5,
+        //"stroke-dasharray": "2 4"
       }, lanesGroup);      
     }
     
   }
 }
   
-function renderIntersectionPolygons(streetsGeom, parent) {
+function renderIntersectionPolygons(streetsGeom, parent, options) {
   // keep track of renderer lanes - render only one poly per connected lanes
   let rendered = [];
   for (let sGeom of streetsGeom) {
@@ -43,20 +55,20 @@ function renderIntersectionPolygons(streetsGeom, parent) {
         svgEl("polygon", {
           points: lGeom.intersectionPoly.map(p => p.join(",")).join(" "),
           "class": "intersection " + lGeom.lane.type,
-          fill: "none",
-          //"stroke": "#000000",
-          "stroke-width": 0.5,
-          "stroke-dasharray": "2 4"
+          fill: options.laneColors[lGeom.expanded?.lane.type || lGeom.lane.type],
+          "stroke": options.outlines ? "rgba(0,0,0,0.2)" : options.laneColors[lGeom.expanded?.lane.type || lGeom.lane.type],
+          "stroke-width": options.outlines ? 0.5 : 0.5,
+          //"stroke-dasharray": "2 4"
         }, parent);   
       }
       if (lGeom.expandPoly) {
         svgEl("polygon", {
           points: lGeom.expandPoly.map(p => p.join(",")).join(" "),
           "class": "retraction " + lGeom.lane.type,
-          fill: "none",
-          //"stroke": "#000000",
-          "stroke-width": 0.5,
-          "stroke-dasharray": "2 4"
+          fill: options.laneColors[lGeom.expanded.lane.type],
+          "stroke": options.outlines ? "rgba(0,0,0,0.2)" : options.laneColors[lGeom.expanded.lane.type],
+          "stroke-width": options.outlines ? 0.5 : 1,
+          //"stroke-dasharray": "2 4"
         }, parent);   
       }
       lGeom.connectedLanes.forEach(l => rendered.push(l));
@@ -66,7 +78,7 @@ function renderIntersectionPolygons(streetsGeom, parent) {
   }
 }
   
-function renderCurbs(streetsGeom, parent) {
+function renderCurbs(streetsGeom, parent, options) {
   let rendered = [];
   let curve = curvedCornerPath(8);
   for (let sGeom of streetsGeom) {
@@ -169,7 +181,7 @@ function renderCurbs(streetsGeom, parent) {
   }
 }
   
-function renderLaneMarkings(streetsGeom, parent) {
+function renderLaneMarkings(streetsGeom, parent, options) {
   for (let sGeom of streetsGeom) {
     let lanesGroup = svgEl("g", {
       "class": "lanes",
@@ -249,7 +261,7 @@ function renderLaneMarkings(streetsGeom, parent) {
   }       
 }
   
-function renderInvalidStreetBoxes(streetsGeom, parent) {    
+function renderInvalidStreetBoxes(streetsGeom, parent, options) {    
   for (let sGeom of streetsGeom) {
     //svgEl("circle", {r: 3, cx: sGeom.start[0], cy: sGeom.start[1], fill: "#f00"}, parent);
     //svgEl("circle", {r: 3, cx: sGeom.end[0], cy: sGeom.end[1], fill: "#f00"}, parent);
@@ -267,7 +279,7 @@ function renderInvalidStreetBoxes(streetsGeom, parent) {
   }
 }
   
-function renderLanesLabels(streetsGeom, parent) {
+function renderLanesLabels(streetsGeom, parent, options) {
   let fontSize = 10;
   for (let sGeom of streetsGeom) {
     let laneGroup = svgEl("g", {
