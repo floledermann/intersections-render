@@ -317,7 +317,7 @@ const testcases = [
         ],
       },
       {
-        angle: 80,
+        angle: 75,
         lanes: [
           {
             type: "car",
@@ -348,7 +348,7 @@ const testcases = [
         ],
       },
       {
-        angle: 80,
+        angle: 75,
         lanes: [
           {
             type: "cycle",
@@ -358,6 +358,79 @@ const testcases = [
       {
         angle: 190,
         lanes: [
+          {
+            type: "car",
+          },          
+        ],
+      },
+    ],
+  }, // end of testcase
+
+  {
+    label: "3-way, car + cycle, cycle going off",
+    streets: [
+      {
+        angle: -10,
+        lanes: [
+          {
+            type: "cycle",
+          },          
+          {
+            type: "car",
+          },          
+        ],
+      },
+      {
+        angle: 75,
+        lanes: [
+          {
+            type: "cycle",
+          },          
+        ],
+      },
+      {
+        angle: 190,
+        lanes: [
+          {
+            type: "car",
+          },          
+          {
+            type: "cycle",
+          },          
+        ],
+      },
+    ],
+  }, // end of testcase
+
+  {
+    label: "3-way, car + cycle, cycle going off across",
+    passes: false,
+    streets: [
+      {
+        angle: -10,
+        lanes: [
+          {
+            type: "car",
+          },          
+          {
+            type: "cycle",
+          },          
+        ],
+      },
+      {
+        angle: 75,
+        lanes: [
+          {
+            type: "cycle",
+          },          
+        ],
+      },
+      {
+        angle: 190,
+        lanes: [
+          {
+            type: "cycle",
+          },          
           {
             type: "car",
           },          
