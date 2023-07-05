@@ -22,6 +22,7 @@
 <li>align streets by specific lanes</li>
 <li>point features in lanes (trees, traffic islands)</li>
 </ul>
+<button class="download-json">Save intersection</button>
 </section>
 
 <template id="streetSettingsGUI">
@@ -327,6 +328,23 @@ let updateSVG = buildSVG(state, document.getElementById("viz-wrapper"));
 updateSVG(state);
 
 let updateUI = buildUI(state, document.getElementById("ui-wrapper"), updateSVG);
+
+document.querySelector("button.download-json").addEventListener("click", e => {
+  let txt = JSON.stringify({
+    label: "New testcase (add description)",
+    settings: state.settings,
+    streets: state.streets,
+    intersection: state.intersection
+  }, null, 2);
+  
+  let blob = new Blob([txt], { type: "application/json;charset=utf-8;"});
+  let url = URL.createObjectURL(blob);
+
+  let dummyLink = document.createElement('a');
+  dummyLink.href = url;
+  dummyLink.setAttribute('download', "intersection.json");
+  dummyLink.click();  
+});
 
 </script>
 
