@@ -5,7 +5,7 @@ export function render(streetsGeom, parent, options) {
   options.laneColors = Object.assign({
     car: "#dddddd",
     pedestrian: "#cccccc",
-    cycle: "#ffdddd",
+    cycle: "#f5c5c5",
     parking: "#eeeeff", 
   }, options.laneColors);
   
