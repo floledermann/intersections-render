@@ -16,7 +16,7 @@
 <section id="notes">
 <h3>To Do</h3>
 <ul>
-<li>collection of test cases</li>
+<li>expand collection of test cases</li>
 <li>construct crossings (Zebra / bicycle)</li>
 <li>align streets by specific lanes</li>
 <li>what to do with bus and tram?</li>
@@ -194,7 +194,7 @@ let style = {
   */
 };
 
-init(testcase, style);
+let state = {};
 
 function generateGeometry(streets, options) {
 
@@ -334,7 +334,7 @@ function buildSVG(state, wrapper, update) {
 }
 
 function init(testcase, style) {
-  let state = {
+  state = {
     settings: testcase.settings,
     streets: testcase.streets,
     intersection: testcase.intersection,
@@ -358,6 +358,8 @@ function init(testcase, style) {
 }
 
 
+init(testcase, style);
+
 
 document.querySelector("button.download-json").addEventListener("click", e => {
   let txt = JSON.stringify({
@@ -378,7 +380,22 @@ document.querySelector("button.download-json").addEventListener("click", e => {
 
 document.querySelector("input.upload-json").addEventListener('change', function(e) {
   if (e.target.files[0]) {
-    document.body.append('You selected ' + e.target.files[0].name);
+  
+    let reader = new FileReader();
+
+    reader.onload = function(event) {
+      let json = JSON.parse(event.target.result);
+      if (json.streets) {
+        testcase = json;
+        init(testcase, style);
+      }
+      else {
+        console.error("Invalid file contents: " + e.target.files[0].name);
+      }
+    }
+
+    reader.readAsText(e.target.files[0]);
+    //document.body.append('You selected ' + e.target.files[0].name);
   }
 });
 
