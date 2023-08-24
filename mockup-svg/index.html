@@ -18,11 +18,25 @@
 <ul>
 <li>collection of test cases</li>
 <li>construct crossings (Zebra / bicycle)</li>
-<li>what to do with bus and tram?</li>
 <li>align streets by specific lanes</li>
+<li>what to do with bus and tram?</li>
 <li>point features in lanes (trees, traffic islands)</li>
+<li>connecting to buildings/greenspace/... at the edge</li>
+<li>mini-roundabouts?</li>
 </ul>
+<div class="fileform">
+<p>
+<select class="select-json">
+</select>
+</p>
+<p>
 <button class="download-json">Save intersection</button>
+</p>
+<p>
+<!-- <label for="upload-json">Load intersection</label> -->
+<input type="file" class="upload-json" id="upload-json" accept=".json"></input>
+</p>
+</div>
 </section>
 
 <template id="streetSettingsGUI">
@@ -166,32 +180,21 @@ let lanePriorities = [
 let testcase = testcases[0];
 //testcase = testcases[testcases.length-1];
 
-let state = {
-  settings: testcase.settings,
-  streets: testcase.streets,
-  intersection: testcase.intersection,
-  style: {
-    defaultWidth: l => l.width,
-    /*
-    widths: {
-      car: 15,
-      cycle: 70,
-      pedestrian: 5,
-      "car-access": 15,
-      green: 15,
-      parking: 15,
-    }
-    */
-  },
-  visualizations: [
-    { 
-      width: 600,
-      height: 600,
-      // style: ...
-    },
-    //{ algorithm: "test1" }
-  ]
-}
+let style = {
+  defaultWidth: l => l.width,
+  /*
+  widths: {
+    car: 15,
+    cycle: 70,
+    pedestrian: 5,
+    "car-access": 15,
+    green: 15,
+    parking: 15,
+  }
+  */
+};
+
+init(testcase, style);
 
 function generateGeometry(streets, options) {
 
@@ -221,8 +224,11 @@ function buildUI(state, wrapper, update) {
         if (update) slider.addEventListener("input", e => update(e.target.name, e.target.value));
       }
     }
- }
+  }
 
+  // clear old UI
+  wrapper.innerHTML = "";
+  
   let streetUiTemplate = document.getElementById("streetSettingsGUI").content.firstElementChild;
   let laneUiTemplate = document.getElementById("laneSettingsGUI").content.firstElementChild;
 
@@ -268,6 +274,9 @@ function buildUI(state, wrapper, update) {
 }
 
 function buildSVG(state, wrapper, update) {
+
+  // clear old UI
+  wrapper.innerHTML = "";
 
   let svgs = [];
 
@@ -324,11 +333,31 @@ function buildSVG(state, wrapper, update) {
   }
 }
 
-let updateSVG = buildSVG(state, document.getElementById("viz-wrapper"));
+function init(testcase, style) {
+  let state = {
+    settings: testcase.settings,
+    streets: testcase.streets,
+    intersection: testcase.intersection,
+    style: style,
+    visualizations: [
+      { 
+        width: 600,
+        height: 600,
+        // style: ...
+      },
+      //{ algorithm: "test1" }
+    ]
+  };
+  
+  let updateSVG = buildSVG(state, document.getElementById("viz-wrapper"));
 
-updateSVG(state);
+  updateSVG(state);
 
-let updateUI = buildUI(state, document.getElementById("ui-wrapper"), updateSVG);
+  let updateUI = buildUI(state, document.getElementById("ui-wrapper"), updateSVG);
+ 
+}
+
+
 
 document.querySelector("button.download-json").addEventListener("click", e => {
   let txt = JSON.stringify({
@@ -346,6 +375,26 @@ document.querySelector("button.download-json").addEventListener("click", e => {
   dummyLink.setAttribute('download', "intersection.json");
   dummyLink.click();  
 });
+
+document.querySelector("input.upload-json").addEventListener('change', function(e) {
+  if (e.target.files[0]) {
+    document.body.append('You selected ' + e.target.files[0].name);
+  }
+});
+
+let select = document.querySelector("select.select-json");
+for (let [index, testcase] of testcases.entries()) {
+  let option = document.createElement("option");
+  option.textContent = testcase.label;
+  option.value = index;
+  select.appendChild(option);
+}
+select.addEventListener('change', function(e) {
+  testcase = testcases[+select.value];
+  init(testcase, style);
+});
+
+
 
 </script>
 

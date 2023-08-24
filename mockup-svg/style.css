@@ -99,3 +99,40 @@ svg .intersection.green {
 button {
   cursor: pointer;
 }
+
+select {
+  font-size: 1rem;
+  padding: 0.2em;
+}
+/* Hack for styling the upload button, but this breaks drag & drop, so disabling */
+/*
+.fileform input[type=file] {
+  opacity: 0;
+}
+
+.fileform label,
+.fileform button {
+  color: black;
+  background-color: rgb(240, 240, 240);
+  background-color: buttonface;
+  padding: 5px 10px;
+  border-radius: 5px;
+  border: 1px outset black;
+  border-color: buttonborder;
+  font-size: 1rem;
+  font-family: sans-serif;
+  height: auto;
+  cursor: pointer;
+}
+
+.fileform label:hover,
+.fileform button:hover {
+  background-color: rgb(220, 220, 220);
+}
+
+.fileform label:active,
+.fileform button:active {
+  background-color: rgb(240, 240, 240);
+  background-color: buttonface;
+}
+*/
