@@ -136,3 +136,33 @@ select {
   background-color: buttonface;
 }
 */
+
+.hblock, .vblock {
+  position: relative;
+}
+
+.laneUI {
+  padding-left: 15px;
+}
+
+.draghandle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 10px;
+  overflow: hidden;
+  cursor: grab;
+  line-height:  20px;/* 1.7; */
+  text-shadow:1px 1px #aaa;
+}
+
+.draghandle:before {
+  content: "░ ░ ░ ░ ░ ░";
+}
+
+.deleteStreet {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+}

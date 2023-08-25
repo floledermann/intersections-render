@@ -26,11 +26,11 @@
 </ul>
 <div class="fileform">
 <p>
-<select class="select-json">
+Testcase: <select class="select-json">
 </select>
 </p>
 <p>
-<button class="download-json">Save intersection</button>
+<button class="download-json">Save</button>
 </p>
 <p>
 <!-- <label for="upload-json">Load intersection</label> -->
@@ -42,6 +42,7 @@
 <template id="streetSettingsGUI">
 <div class="streetUI hblock">
   <h2>StreetName</h2>
+  <button class="deleteStreet" title="Delete street">✖</button>
   <div>
     <label for="angle">Angle</label>
     <input type="range" id="angle" name="angle" min="-360" max="360">
@@ -49,26 +50,28 @@
   </div>
   <div class="lanesWrapper">
   </div>
-  <!--
   <div>
     <button name="addLane" title="Add lane">+</button>
   </div>
-  -->
 </div>
 </template>
 
 <template id="laneSettingsGUI">
-<div class="laneUI vblock">
-  <div>
-    <label for="type">Type</label>
+<div class="laneUI vblock" draggable="true">
+  <span class="draghandle"></span>
+  <details>
+  <summary>
+    <!--<label for="type">Type</label>-->
     <select id="type" name="type"></select>
     <button name="deleteLane" title="Delete lane">-</button>
-  </div>
+    
+  </summary>
   <div>
     <label for="width">Width</label>
     <input type="range" id="width" name="width" min="1" max="100">
     <span class="value"></span> px
   </div>
+  </details>
 </div>
 </template>
 
