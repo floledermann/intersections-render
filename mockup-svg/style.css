@@ -145,6 +145,10 @@ select {
   padding-left: 15px;
 }
 
+.laneUI.dragging {
+  opacity: 0.2;
+}
+
 .draghandle {
   position: absolute;
   top: 0;

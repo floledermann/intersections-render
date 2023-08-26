@@ -228,6 +228,42 @@ function buildUI(state, wrapper, update) {
       }
     }
   }
+  
+  let dragTarget = null;
+  
+  function makeDraggable(elem, parent) {
+  
+    function compareOrder(elem1, elem2) {
+      if (elem1.parentElement !== elem2.parentElement) {
+        return null;
+      }
+      if (elem1 === elem2) return 0;
+
+      if (elem1.compareDocumentPosition(elem2) & Node.DOCUMENT_POSITION_FOLLOWING) {
+        return -1;
+      }
+      return 1;
+    }
+    
+    elem.addEventListener("dragstart", () => {
+      dragTarget = elem;
+      elem.classList.add("dragging");
+    });
+
+    elem.addEventListener("dragover", () => {
+      let order = compareOrder(elem, dragTarget);
+
+      // If not sibling, do nothing
+      if (!order) return;
+
+      let baseElement = order === -1 ? elem : elem.nextSlibing;
+      parent.insertBefore(dragTarget, baseElement);
+    });
+
+    elem.addEventListener("dragend", () => {
+      elem.classList.remove("dragging");
+    });    
+  }
 
   // clear old UI
   wrapper.innerHTML = "";
@@ -254,6 +290,7 @@ function buildUI(state, wrapper, update) {
       let laneUI = laneUiTemplate.cloneNode(true);
       lanesWrapper.appendChild(laneUI);
       
+      makeDraggable(laneUI, lanesWrapper);
       wireSliders(laneUI, lane, (name, val) => {lane[name] = +val; update(state)});
     
       let sel = laneUI.querySelector("#type");
@@ -414,6 +451,23 @@ select.addEventListener('change', function(e) {
   init(testcase, style);
 });
 
+let ctrlKey = false;
+for (let wrapper of document.querySelectorAll(".lanesWrapper")) {
+  let allDetails = wrapper.querySelectorAll(".laneUI > details");
+  for (let details of allDetails) {
+    // need to capture click event, as ctrlKey is not deliverd with toggle event :\
+    details.addEventListener("click", (event) => {
+      ctrlKey = event.ctrlKey;
+    });
+    details.addEventListener("toggle", (event) => {
+      if (ctrlKey) {
+        for (let d of allDetails) {
+          d.open = details.open;
+        }
+      }
+    });
+  }
+}
 
 
 </script>
