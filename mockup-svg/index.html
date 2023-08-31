@@ -57,7 +57,7 @@ Testcase: <select class="select-json">
 </template>
 
 <template id="laneSettingsGUI">
-<div class="laneUI vblock" draggable="true">
+<div class="laneUI vblock">
   <span class="draghandle"></span>
   <details>
   <summary>
@@ -68,8 +68,8 @@ Testcase: <select class="select-json">
   </summary>
   <div>
     <label for="width">Width</label>
-    <input type="range" id="width" name="width" min="1" max="100">
-    <span class="value"></span> px
+    <input type="range" id="width" name="width" min="0.1" max="5" step="0.1">
+    <span class="value"></span> m
   </div>
   </details>
 </div>
@@ -89,7 +89,7 @@ let laneTypes = {
   "car": {
     label: "Lane for cars",
     options: [
-      { name: "width", type: "integer", defaultValue: 30 },
+      { name: "width", type: "integer", defaultValue: 3.0 },
       { name: "curb", type: "boolean", defaultValue: false },
       { name: "paint", type: "boolean", defaultValue: true },
       { name: "direction", choices: ["forward", "backward", "both"], defaultValue: "forward" },
@@ -98,19 +98,19 @@ let laneTypes = {
   "car-access": {
     label: "Car access (e.g. garage)",
     options: [
-      { name: "width", type: "integer", defaultValue: 20 },
+      { name: "width", type: "integer", defaultValue: 2.0 },
     ]
   },
   "pedestrian": {
     label: "Pedestrian (e.g. sidewalk)",
     options: [
-      { name: "width", type: "integer", defaultValue: 15 },
+      { name: "width", type: "integer", defaultValue: 1.5 },
     ]
   },
   "cycle": {
     label: "Cycling (dedicated)",
     options: [
-      { name: "width", type: "integer", defaultValue: 20 },
+      { name: "width", type: "integer", defaultValue: 2.0 },
       { name: "surface", 
         choices: ["asphalt","concrete","paving_stones","cobblestone","gravel","ground"], 
         defaultValue: "asphalt" 
@@ -121,38 +121,40 @@ let laneTypes = {
   "cycle-shared": {
     label: "Cycling (shared with cars)",
     options: [
-      { name: "width", type: "integer", defaultValue: 15 },  // width depends on type
+      { name: "width", type: "integer", defaultValue: 1.5 },  // width depends on type
     ]
   },
   "parking": {
     label: "Parking",
     options: [
-      { name: "width", type: "integer", defaultValue: 30 },  // width depends on type
+      { name: "width", type: "integer", defaultValue: 3.0 },  // width depends on orientation
       { name: "orientation", choices: ["parallel","diagonal","orthogonal"], defaultValue: "parallel" },
     ],
     "continue": "straight",
-    retractFromCrossing: 50, // 
+    retractFromCrossing: 5.0, // 
   },
   "green": {
     label: "Grass",
     options: [
-      { name: "width", type: "integer", defaultValue: 30 },  // width depends on type
+      { name: "width", type: "integer", defaultValue: 3.0 },  // width depends on type
     ]
     
   },
+  /*
   "bus": {
     label: "Bus",
     options: [
-      { name: "width", type: "integer", defaultValue: 40 },
+      { name: "width", type: "integer", defaultValue: 4.0 },
     ]
   },
   // what about shared tram?
   "tram": {
     label: "Tram / rail",
     options: [
-      { name: "width", type: "integer", defaultValue: 30 },
+      { name: "width", type: "integer", defaultValue: 3.0 },
     ]
   }
+  */
 }
 
 // extract default values into a simple dict structure
@@ -184,7 +186,7 @@ let testcase = testcases[0];
 //testcase = testcases[testcases.length-1];
 
 let style = {
-  defaultWidth: l => l.width,
+  defaultWidth: l => l.width * 10,
   /*
   widths: {
     car: 15,
@@ -245,6 +247,14 @@ function buildUI(state, wrapper, update) {
       return 1;
     }
     
+    let handle = elem.querySelector(".draghandle");
+    handle.addEventListener("mousedown", e => {
+      elem.setAttribute("draggable", "true");
+    });
+    handle.addEventListener("mouseup", e => {
+      elem.setAttribute("draggable", "false");
+    });
+    
     elem.addEventListener("dragstart", () => {
       dragTarget = elem;
       elem.classList.add("dragging");
@@ -272,6 +282,7 @@ function buildUI(state, wrapper, update) {
 
     elem.addEventListener("dragend", () => {
       elem.classList.remove("dragging");
+      elem.setAttribute("draggable", "false");
     });    
   }
 

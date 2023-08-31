@@ -28,7 +28,7 @@ const testcases = [
             type: "parking",
             paint: true,
             orientation: "parallel",
-            width: 22
+            width: 2.2
           },
           {
             type: "car",
@@ -44,7 +44,7 @@ const testcases = [
             type: "parking",
             paint: true,
             orientation: "diagonal",
-            width: 37
+            width: 3.7
           },/*
           {
             type: "cycle",
@@ -78,7 +78,7 @@ const testcases = [
             type: "parking",
             paint: true,
             orientation: "diagonal",
-            width: 37
+            width: 3.7
           },
           {
             type: "car",
@@ -94,13 +94,13 @@ const testcases = [
             type: "parking",
             paint: true,
             orientation: "parallel",
-            width: 22
+            width: 2.2
           },
           {
             type: "pedestrian",
             curb: true,
             boundary: "building",
-            curbHeight: 15,
+            curbHeight: 0.15,
           },
         ],
       },
@@ -111,7 +111,7 @@ const testcases = [
             type: "pedestrian",
             curb: true,
             boundary: "building",
-            curbHeight: 15,
+            curbHeight: 0.15,
           },
           {
             type: "cycle",
@@ -128,13 +128,13 @@ const testcases = [
             type: "parking",
             paint: true,
             orientation: "diagonal",
-            width: 37
+            width: 3.7
           },
           {
             type: "pedestrian",
             curb: true,
             boundary: "building",
-            curbHeight: 15,
+            curbHeight: 0.15,
           },
         ],
       },
@@ -145,13 +145,13 @@ const testcases = [
             type: "pedestrian",
             curb: true,
             boundary: "building",
-            curbHeight: 15,
+            curbHeight: 0.15,
           },
           {
             type: "parking",
             paint: true,
             orientation: "diagonal",
-            width: 37
+            width: 3.7
           },
           {
             type: "car",
@@ -168,7 +168,7 @@ const testcases = [
             type: "pedestrian",
             curb: true,
             boundary: "building",
-            curbHeight: 15,
+            curbHeight: 0.15,
           },
         ],
       },
