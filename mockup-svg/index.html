@@ -231,7 +231,7 @@ function buildUI(state, wrapper, update) {
   
   let dragTarget = null;
   
-  function makeDraggable(elem, parent) {
+  function makeDraggable(elem, parent, dataArray, update) {
   
     function compareOrder(elem1, elem2) {
       if (elem1.parentElement !== elem2.parentElement) {
@@ -253,11 +253,21 @@ function buildUI(state, wrapper, update) {
     elem.addEventListener("dragover", () => {
       let order = compareOrder(elem, dragTarget);
 
-      // If not sibling, do nothing
+      // If own element, do nothing
       if (!order) return;
 
-      let baseElement = order === -1 ? elem : elem.nextSlibing;
-      parent.insertBefore(dragTarget, baseElement);
+      console.log("dragover");
+      
+      let targetElement = order === -1 ? elem : elem.nextSlibing;
+      parent.insertBefore(dragTarget, targetElement);
+      
+      // re-order array to match
+      let idx = dataArray.findIndex(e => e==dragTarget.data);
+      dataArray.splice(idx, 1); 
+      idx = targetElement ? dataArray.findIndex(e => e==targetElement.data) : dataArray.length;
+      dataArray.splice(idx, 0, dragTarget.data); 
+      
+      update();
     });
 
     elem.addEventListener("dragend", () => {
@@ -289,8 +299,9 @@ function buildUI(state, wrapper, update) {
       
       let laneUI = laneUiTemplate.cloneNode(true);
       lanesWrapper.appendChild(laneUI);
+      laneUI.data = lane;
       
-      makeDraggable(laneUI, lanesWrapper);
+      makeDraggable(laneUI, lanesWrapper, street.lanes, () => update(state));
       wireSliders(laneUI, lane, (name, val) => {lane[name] = +val; update(state)});
     
       let sel = laneUI.querySelector("#type");

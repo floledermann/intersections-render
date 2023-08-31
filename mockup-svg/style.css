@@ -157,6 +157,7 @@ select {
   width: 10px;
   overflow: hidden;
   cursor: grab;
+  font-size: 15px;
   line-height:  20px;/* 1.7; */
   text-shadow:1px 1px #aaa;
 }
