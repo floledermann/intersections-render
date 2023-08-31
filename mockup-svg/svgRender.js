@@ -1,5 +1,6 @@
 import { svgEl, curvedCornerPath } from "./svgUtil.js";
-
+import { normalizeAngle180 } from "./vecMath.js";
+         
 export function render(streetsGeom, parent, options) {
   
   options.laneColors = Object.assign({
@@ -24,12 +25,13 @@ export function render(streetsGeom, parent, options) {
 function renderLaneBoxes(streetsGeom, parent, options) {
   for (let sGeom of streetsGeom) {
     //if (sGeom.invalid) continue;
-    
+        
     let lanesGroup = svgEl("g", {
       "class": "lanes",
       transform: `translate(${sGeom.start.join(",")}) rotate(${sGeom.angle}) translate(0,0)`,
     }, parent);
     for (let lGeom of sGeom.lanesGeom) {
+      //if (isNaN(lGeom.length)) debugger;
       svgEl("rect", {
         x: 0,
         y: lGeom.offset,
