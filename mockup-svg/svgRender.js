@@ -57,8 +57,8 @@ function renderIntersectionPolygons(streetsGeom, parent, options) {
         svgEl("polygon", {
           points: lGeom.intersectionPoly.map(p => p.join(",")).join(" "),
           "class": "intersection " + lGeom.lane.type,
-          fill: options.laneColors[lGeom.expanded?.lane.type || lGeom.lane.type],
-          "stroke": options.outlines ? "rgba(0,0,0,0.2)" : options.laneColors[lGeom.expanded?.lane.type || lGeom.lane.type],
+          fill: options.laneColors[lGeom.retractedBy?.lane.type || lGeom.lane.type],
+          "stroke": options.outlines ? "rgba(0,0,0,0.2)" : options.laneColors[lGeom.retractedBy?.lane.type || lGeom.lane.type],
           "stroke-width": options.outlines ? 0.5 : 0.5,
           //"stroke-dasharray": "2 4"
         }, parent);   
@@ -67,8 +67,8 @@ function renderIntersectionPolygons(streetsGeom, parent, options) {
         svgEl("polygon", {
           points: lGeom.expandPoly.map(p => p.join(",")).join(" "),
           "class": "retraction " + lGeom.lane.type,
-          fill: options.laneColors[lGeom.expanded.lane.type],
-          "stroke": options.outlines ? "rgba(0,0,0,0.2)" : options.laneColors[lGeom.expanded.lane.type],
+          fill: options.laneColors[lGeom.retractedBy.lane.type],
+          "stroke": options.outlines ? "rgba(0,0,0,0.2)" : options.laneColors[lGeom.retractedBy.lane.type],
           "stroke-width": options.outlines ? 0.5 : 1,
           //"stroke-dasharray": "2 4"
         }, parent);   

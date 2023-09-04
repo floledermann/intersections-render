@@ -155,20 +155,23 @@ export default function(streets, options) {
     }
     
     // wire expansion areas
+    // laneGeom.expand -> lane expands into other lane (left and/or right)
+    // laneGeom.retractedBy -> lane is taken over by expanded neighboring lane (left or right)
+    // TODO: precendece (left/right) of expansion should be configurable
     for (let laneGeom of geom.lanesGeom) {
       let expandConfig = options.expand?.[laneGeom.lane.type];
       if (!expandConfig) continue;
       for (let type of arr(expandConfig.type)) {
         if (laneGeom.laneLeft?.lane.type == type && !laneGeom.laneLeft.expandRight) {
           laneGeom.laneLeft.expandRight = laneGeom;
-          laneGeom.expandedLeft = laneGeom.laneLeft;
+          laneGeom.retractedLeft = laneGeom.laneLeft;
         }
         if (laneGeom.laneRight?.lane.type == type && !laneGeom.laneRight.expandLeft) {
           laneGeom.laneRight.expandLeft = laneGeom;
-          laneGeom.expandedRight = laneGeom.laneRight;
+          laneGeom.retractedRight = laneGeom.laneRight;
         }
-        laneGeom.expanded = laneGeom.expandedRight || laneGeom.expandedLeft;
-        if (laneGeom.expanded) break;
+        laneGeom.retractedBy = laneGeom.retractedLeft || laneGeom.retractedRight;
+        if (laneGeom.retractedBy) break;
       }
     }
   }

@@ -128,7 +128,7 @@ export default function(streetsGeom, options) {
       
       // geometry of expansion polygons
       //laneGeom.retractedLength = laneGeom.length;
-      if (laneGeom.expanded) {
+      if (laneGeom.retractedBy) {
         let retractLength = options.expand?.[laneGeom.lane.type]?.length;
         laneGeom.length = laneGeom.length - retractLength;
         laneGeom.expandPoly = [
