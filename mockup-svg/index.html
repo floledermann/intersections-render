@@ -183,6 +183,7 @@ let lanePriorities = [
 ];
 
 let testcaseIndex = +(new URLSearchParams(window.location.search.slice(1)).get("testcase"));
+if (testcaseIndex < 0) testcaseIndex = testcases.length + testcaseIndex;
 let testcase = testcases[testcaseIndex];
 //testcase = testcases[testcases.length-1];
 
