@@ -182,7 +182,8 @@ let lanePriorities = [
   // what to do with bus and tram?
 ];
 
-let testcase = testcases[0];
+let testcaseIndex = +(new URLSearchParams(window.location.search.slice(1)).get("testcase"));
+let testcase = testcases[testcaseIndex];
 //testcase = testcases[testcases.length-1];
 
 let style = {
@@ -466,6 +467,7 @@ for (let [index, testcase] of testcases.entries()) {
   let option = document.createElement("option");
   option.textContent = testcase.label;
   option.value = index;
+  if (index == testcaseIndex) option.selected = true;
   select.appendChild(option);
 }
 select.addEventListener('change', function(e) {
