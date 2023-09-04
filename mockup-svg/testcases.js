@@ -439,6 +439,145 @@ const testcases = [
     ],
   }, // end of testcase
 
+  {
+    label: "4-way, car + sidewalk",
+    passes: false,
+    streets: [
+      {
+        angle: -10,
+        lanes: [
+          {
+            type: "pedestrian",
+          },          
+          {
+            type: "car",
+          },          
+          {
+            type: "pedestrian",
+          },          
+        ],
+      },
+      {
+        angle: 75,
+        lanes: [
+          {
+            type: "pedestrian",
+          },          
+          {
+            type: "car",
+          },          
+          {
+            type: "pedestrian",
+          },          
+        ],
+      },
+      {
+        angle: 190,
+        lanes: [
+          {
+            type: "pedestrian",
+          },          
+          {
+            type: "car",
+          },          
+          {
+            type: "pedestrian",
+          },          
+        ],
+      },
+      {
+        angle: 270,
+        lanes: [
+          {
+            type: "pedestrian",
+          },          
+          {
+            type: "car",
+          },          
+          {
+            type: "pedestrian",
+          },          
+        ],
+      },
+    ],
+  }, // end of testcase
+
+  {
+    comment: `This is to test lanes that are not directly stopped by another lane of the same priority.`,
+    label: "4-way, lower-priority lanes embedded in car lanes",
+    passes: false,
+    streets: [
+      {
+        angle: -10,
+        lanes: [
+          {
+            type: "pedestrian",
+          },          
+          {
+            type: "car",
+          },          
+          {
+            type: "bicycle",
+          },          
+          {
+            type: "parking",
+          },          
+          {
+            type: "bicycle",
+          },          
+          {
+            type: "car",
+          },          
+          {
+            type: "pedestrian",
+          },          
+        ],
+      },
+      {
+        angle: 75,
+        lanes: [
+          {
+            type: "pedestrian",
+          },          
+          {
+            type: "car",
+          },          
+          {
+            type: "pedestrian",
+          },          
+        ],
+      },
+      {
+        angle: 190,
+        lanes: [
+          {
+            type: "pedestrian",
+          },          
+          {
+            type: "car",
+          },          
+          {
+            type: "pedestrian",
+          },          
+        ],
+      },
+      {
+        angle: 270,
+        lanes: [
+          {
+            type: "pedestrian",
+          },          
+          {
+            type: "car",
+          },          
+          {
+            type: "pedestrian",
+          },          
+        ],
+      },
+    ],
+  }, // end of testcase
+
 
 ];
 
