@@ -248,7 +248,7 @@ function buildUI(state, wrapper, update) {
     }
     
     let handle = elem.querySelector(".draghandle");
-    handle.addEventListener("mousedown", e => {
+      handle.addEventListener("mousedown", e => {
       elem.setAttribute("draggable", "true");
     });
     handle.addEventListener("mouseup", e => {
@@ -268,7 +268,7 @@ function buildUI(state, wrapper, update) {
 
       console.log("dragover");
       
-      let targetElement = order === -1 ? elem : elem.nextSlibing;
+      let targetElement = order === -1 ? elem : elem.nextSibling;
       parent.insertBefore(dragTarget, targetElement);
       
       // re-order array to match
