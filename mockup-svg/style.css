@@ -40,62 +40,11 @@ ul {
 
 svg {
   margin: 5px;
-  
-  --color-lane-car: #dddddd;
-  --color-intersection-car: #d4d4d4;
-  --color-lane-pedestrian: #cccccc;
-  --color-intersection-pedestrian: #c3c3c3;
-  --color-lane-cycle: #f5c5c5;
-  --color-intersection-cycle: #f4d2d2;
-  --color-lane-parking: #eeeeff;
-  --color-intersection-parking: #e0e0f4;
 }
 
-/*
-svg .lane.car {
-  fill: var(--color-lane-car);
+svg .intersection {
 }
 
-svg .intersection.car {
-  fill: var(--color-lane-car);
-}
-
-svg .lane.pedestrian {
-  fill: var(--color-lane-pedestrian);
-}
-
-svg .intersection.pedestrian {
-  fill: var(--color-lane-pedestrian);
-}
-
-svg .lane.cycle {
-  fill: var(--color-lane-cycle);
-}
-
-svg .intersection.cycle {
-  fill: var(--color-lane-cycle);
-}
-
-svg .lane.parking {
-  fill: var(--color-lane-parking);
-}
-
-svg .intersection.parking {
-  fill: var(--color-lane-pedestrian);
-}
-
-svg .retraction.parking {
-  fill: var(--color-lane-pedestrian);
-}
-
-svg .lane.green {
-  fill: #99dd99;
-}
-
-svg .intersection.green {
-  fill: #96d896;
-}
-*/
 button {
   cursor: pointer;
 }
