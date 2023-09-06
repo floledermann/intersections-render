@@ -501,7 +501,95 @@ const testcases = [
       },
     ],
   }, // end of testcase
-
+  {
+    "label": "4-way, one road with many lanes",
+    "streets": [
+      {
+        "angle": -10,
+        "lanes": [
+          {
+            "type": "pedestrian",
+            "width": 1.5
+          },
+          {
+            "type": "car",
+            "width": 3,
+          },
+          {
+            "type": "cycle",
+            "width": 2,
+          },
+          {
+            "type": "parking",
+            "width": 3,
+          },
+          {
+            "type": "green",
+            "width": 2,
+          },
+          {
+            "type": "cycle",
+            "width": 3,
+          },
+          {
+            "type": "pedestrian",
+            "width": 1.5
+          }
+        ]
+      },
+      {
+        "angle": 75,
+        "lanes": [
+          {
+            "type": "pedestrian",
+            "width": 1.5
+          },
+          {
+            "type": "car",
+            "width": 3,
+          },
+          {
+            "type": "pedestrian",
+            "width": 1.5
+          }
+        ]
+      },
+      {
+        "angle": 190,
+        "lanes": [
+          {
+            "type": "pedestrian",
+            "width": 1.5
+          },
+          {
+            "type": "car",
+            "width": 3,
+          },
+          {
+            "type": "pedestrian",
+            "width": 1.5
+          }
+        ]
+      },
+      {
+        "angle": 264,
+        "lanes": [
+          {
+            "type": "pedestrian",
+            "width": 1.5
+          },
+          {
+            "type": "car",
+            "width": 3,
+          },
+          {
+            "type": "pedestrian",
+            "width": 1.5
+          }
+        ]
+      }
+    ]
+  },
   {
     comment: `This is to test lanes that are not directly stopped by another lane of the same priority.`,
     label: "4-way, lower-priority lanes embedded in car lanes",
@@ -517,13 +605,13 @@ const testcases = [
             type: "car",
           },          
           {
-            type: "bicycle",
+            type: "cycle",
           },          
           {
             type: "parking",
           },          
           {
-            type: "bicycle",
+            type: "cycle",
           },          
           {
             type: "car",
