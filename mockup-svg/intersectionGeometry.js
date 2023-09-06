@@ -71,7 +71,7 @@ export default function(streetsGeom, options) {
     }
   }
   
-  // find intersection polygons
+  // construct intersection polygons
   for (let streetGeom of streetsGeom) {
     for (let laneGeom of streetGeom.lanesGeom) {
       if (laneGeom.connectedLanes?.length > 1) {
@@ -82,6 +82,8 @@ export default function(streetsGeom, options) {
           });
           let points = [];
           let lastLane = null;
+          // TODO: use nextLane to figure out relationship to bend
+          let nextLane = null;
           for (let lGeom of connectedLanes) {
             // add corner point
             if (lastLane && lastLane.streetGeom != lGeom.streetGeom) {
@@ -96,11 +98,14 @@ export default function(streetsGeom, options) {
             points.push(intersect(lastLane.endLeft, lastLane.unit, connectedLanes[0].endRight, connectedLanes[0].unit));
           }
           laneGeom.intersectionPoly = points;
-          // intersection polygon should always have the same topology of points
-          // in relation to the lane -> compute for every lane
-          for (let lGeom of connectedLanes) {
+          // intersection polygon should always have a well-defined topology of points
+          // in relation to the lane -> store index of where intersection poly 
+          // starts for each lane
+          // TODO: calculate index and adapt curb rendering code in svgRenderer
+          for (let [index, lGeom] of connectedLanes.entries()) {
             //lGeom.intersectionPoly = points;
-          }
+            //lGeom.intersectionPolyIndex = index * 3;
+          }          
         }
       }
       else {

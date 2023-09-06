@@ -92,12 +92,8 @@ function renderCurbs(streetsGeom, parent, options) {
           if (lGeom.expandRight) {
             let exLane = lGeom.expandRight;
             path += `L ${exLane.expandPoly[0].join(",")}`;
-            //path += `L ${exLane.expandPoly[3].join(",")}`;
-            //path += `L ${exLane.expandPoly[2].join(",")}`;
             curve.start(exLane.expandPoly[0], exLane.expandPoly[3]);
-            //path += curve.bend(exLane.expandPoly[2]);
             if (exLane.intersectionPoly) {
-              //path += curve.bend(exLane.intersectionPoly[0]);
               path += curve.bend(exLane.intersectionPoly[5]);
               if (exLane.connectedLanes.length > 1) {
                 path += curve.straight(exLane.intersectionPoly[0]);
@@ -106,9 +102,6 @@ function renderCurbs(streetsGeom, parent, options) {
                 path += curve.bend(exLane.intersectionPoly[2]);
                 path += curve.straight(exLane.intersectionPoly[2]);
               }
-              //path += `L ${exLane.intersectionPoly[0].join(",")}`;
-              //path += `L ${exLane.intersectionPoly[5].join(",")}`;
-              //path += `L ${exLane.intersectionPoly[4].join(",")}`;
             }
             else {
               path += `L ${exLane.expandPoly[1].join(",")}`;
@@ -134,14 +127,8 @@ function renderCurbs(streetsGeom, parent, options) {
           if (lGeom.expandLeft) {
             let exLane = lGeom.expandLeft;
             path += `L ${exLane.expandPoly[3].join(",")}`;
-            //path += `L ${exLane.expandPoly[0].join(",")}`;
-            //path += `L ${exLane.expandPoly[1].join(",")}`;
             curve.start(exLane.expandPoly[3], exLane.expandPoly[0]);
-            //path += curve.bend(exLane.expandPoly[1]);
             if (exLane.intersectionPoly) {
-              //path += `L ${exLane.intersectionPoly[2].join(",")}`;
-              //path += `L ${exLane.intersectionPoly[2].join(",")}`;
-              //path += `L ${exLane.intersectionPoly[3].join(",")}`;
               path += curve.bend(exLane.intersectionPoly[2]);
               path += curve.bend(exLane.intersectionPoly[3]);
               path += curve.straight(exLane.intersectionPoly[3]);

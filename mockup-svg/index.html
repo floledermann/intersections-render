@@ -30,7 +30,7 @@ Testcase: <select class="select-json">
 </select>
 </p>
 <p>
-<button class="download-json">Save</button>
+<button class="download-json">Save to File</button>
 </p>
 <p>
 <!-- <label for="upload-json">Load intersection</label> -->
@@ -389,7 +389,7 @@ function buildSVG(state, wrapper, update) {
       
       svgs[i].innerHTML = "";
       svgRender(streetsGeom, svgs[i], {
-        labels: false,
+        //labels: false,
         //outlines: true,
       });      
       i++;
