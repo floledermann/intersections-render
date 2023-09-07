@@ -538,7 +538,7 @@ const testcases = [
         ]
       },
       {
-        "angle": 75,
+        "angle": 72,
         "lanes": [
           {
             "type": "pedestrian",
@@ -572,7 +572,7 @@ const testcases = [
         ]
       },
       {
-        "angle": 264,
+        "angle": 276,
         "lanes": [
           {
             "type": "pedestrian",
