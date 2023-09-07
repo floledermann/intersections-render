@@ -27,6 +27,13 @@ export function intersectDist(p1, v1, p2, v2) {
   return d;
 }
 
+export function pointLineDist(p0, p1, v1) {
+  // https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line#Line_defined_by_two_points
+  let p2 = vAdd(p1, v1);
+  return Math.abs((p2[0]-p1[0])*(p1[1]-p0[1])-(p1[0]-p0[0])*(p2[1]-p1[1])) /
+         Math.sqrt((p2[0]-p1[0])**2+(p2[1]-p1[1])**2);
+}
+
 export const degRad = a => a * Math.PI / 180;
 export const radDeg = a => a * 180 / Math.PI;
 

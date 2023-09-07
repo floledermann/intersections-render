@@ -1,6 +1,6 @@
 
 import { vMult, vAdd, vSub, vLen, vUnit, 
-         intersect, intersectDist, tangentPoints, 
+         intersect, intersectDist, pointLineDist, tangentPoints, 
          normalizeAngle } from "./vecMath.js";
          
 import { arrayMin, arrayMax } from "./util.js";
@@ -71,23 +71,54 @@ export default function(streetsGeom, options) {
     }
   }
   
+  function getNeighbourLanes(laneGeom, lanes, includeSameStreet) {
+    lanes = lanes
+              .filter(l => l != laneGeom && (includeSameStreet || l.streetGeom != laneGeom.streetGeom))
+              .sort((a,b) => {
+                return normalizeAngle(a.clockwiseOrder - laneGeom.clockwiseOrder) - normalizeAngle(b.clockwiseOrder - laneGeom.clockwiseOrder);
+              });
+    if (lanes.length < 1) return [null,null];
+    return [lanes[0],lanes[lanes.length-1]];
+  }
+  
   // construct intersection polygons
   for (let streetGeom of streetsGeom) {
     for (let laneGeom of streetGeom.lanesGeom) {
       if (laneGeom.connectedLanes?.length > 1) {
         if (!laneGeom.intersectionPoly) {
           // sort lanes in clockwise direction relative to the current lane
-          let connectedLanes = Array.from(laneGeom.connectedLanes).sort((a,b) => {
-            return normalizeAngle(a.clockwiseOrder - laneGeom.clockwiseOrder) - normalizeAngle(b.clockwiseOrder - laneGeom.clockwiseOrder);
-          });
+          let connectedLanes = Array.from(laneGeom.connectedLanes)
+              .sort((a,b) => {
+                return normalizeAngle(a.clockwiseOrder - laneGeom.clockwiseOrder) - normalizeAngle(b.clockwiseOrder - laneGeom.clockwiseOrder);
+              });
           let points = [];
           let lastLane = null;
           // TODO: use nextLane to figure out relationship to bend
-          let nextLane = null;
-          for (let lGeom of connectedLanes) {
+          for (let [index, lGeom] of connectedLanes.entries()) {
             // add corner point
-            if (lastLane && lastLane.streetGeom != lGeom.streetGeom) {
-              points.push(intersect(lastLane.endLeft, lastLane.unit, lGeom.endRight, lGeom.unit));
+            if (lastLane) {
+              if (lastLane.streetGeom != lGeom.streetGeom) {
+                points.push(intersect(lastLane.endLeft, lastLane.unit, lGeom.endRight, lGeom.unit));
+              }
+              else {
+                // in same street -> figure out connection based on the two lanes crossing it
+                let [leftLane, rightLane] = getNeighbourLanes(lGeom, connectedLanes, false);
+                if (leftLane != null) {
+                  // figure out where bend is in relation to the lane (left, inside, right)
+                  let bendPoint = intersect(leftLane.endRight, leftLane.unit, rightLane.endLeft, rightLane.unit);
+                  let endCenter = vMult(vAdd(lGeom.endLeft, lGeom.endRight), 1/2);
+                  let bendDist = pointLineDist(bendPoint, endCenter, lGeom.unit);
+                  if (bendDist < lGeom.width/2) {
+                    // bend inside -> intersect edge with neighbouring lane
+                    points.push(intersect(lGeom.endRight, lGeom.unit, rightLane.endLeft, rightLane.unit));
+                  }
+                  else {
+                    points.push(intersect(lastLane.endLeft, lastLane.unit, rightLane.endLeft, rightLane.unit));
+                    points.push(bendPoint);
+                    points.push(intersect(lGeom.endRight, lGeom.unit, leftLane.endRight, leftLane.unit));
+                  }
+                }
+              }
             }
             points.push(lGeom.endRight);
             points.push(lGeom.endLeft);
