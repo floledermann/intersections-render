@@ -109,8 +109,8 @@ export default function(streets, options) {
 
     for (let lane of street.lanes) {
       // store basic lane geometry
-      let laneDef = Object.assign({}, options.laneDefaults[lane.type], lane);
-      let laneWidth = valOrFunc(options.style.widths?.[lane.type], lane) || valOrFunc(options.style.defaultWidth, lane) || 20;
+      let laneWithDefaults = Object.assign({}, options.laneDefaults[lane.type], lane);
+      let laneWidth = valOrFunc(options.style.widths?.[lane.type], laneWithDefaults) || valOrFunc(options.style.defaultWidth, laneWithDefaults) || 20;
       
       geom.lanesGeom.push({
         id: geom.id + "-lane" + laneCounter,
@@ -120,7 +120,7 @@ export default function(streets, options) {
         offset: streetWidth,
         unit: geom.unit,
         normal: geom.normal,
-        lane: lane,
+        lane: laneWithDefaults,
         streetGeom: geom,
         connectedLanes: new Set(),
         stoppedBy: [],
