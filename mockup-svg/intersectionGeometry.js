@@ -101,6 +101,12 @@ export default function(streetsGeom, options) {
                 points.push(intersect(lastLane.endLeft, lastLane.unit, lGeom.endRight, lGeom.unit));
               }
               else {
+                points.push(lGeom.endRight);
+                // This was an attempt to reconstruct a more detailed
+                // crossing polygon, particularly for parallel lanes separated
+                // by lower-prio lanes
+                // (see testcase "4-way, lower-priority lanes embedded in car lanes")
+                /*
                 // in same street -> figure out connection based on the two lanes crossing it
                 let [leftLane, rightLane] = getNeighbourLanes(lGeom, connectedLanes, false);
                 if (leftLane != null) {
@@ -110,14 +116,25 @@ export default function(streetsGeom, options) {
                   let bendDist = pointLineDist(bendPoint, endCenter, lGeom.unit);
                   if (bendDist < lGeom.width/2) {
                     // bend inside -> intersect edge with neighbouring lane
-                    points.push(intersect(lGeom.endRight, lGeom.unit, rightLane.endLeft, rightLane.unit));
+                    points.push(intersect(lastLane.endLeft, lastLane.unit, rightLane.endLeft, rightLane.unit));
+                    let mergePoint = intersect(lGeom.endRight, lGeom.unit, rightLane.endLeft, rightLane.unit);
+                    // add point twice to have same vertex count
+                    points.push(mergePoint);
+                    points.push(mergePoint);
                   }
                   else {
-                    points.push(intersect(lastLane.endLeft, lastLane.unit, rightLane.endLeft, rightLane.unit));
-                    points.push(bendPoint);
-                    points.push(intersect(lGeom.endRight, lGeom.unit, leftLane.endRight, leftLane.unit));
+                    // bend outside current lane -> check if inbetween
+                    let lastBendPoint = intersect(leftLane.endRight, leftLane.unit, rightLane.endLeft, rightLane.unit);
+                    let lastEndCenter = vMult(vAdd(lastLane.endLeft, lastLane.endRight), 1/2);
+                    let lastBendDist = pointLineDist(bendPoint, endCenter, lastLane.unit);
+                    if (lastBendDist < lastLane.width / 2) {
+                      points.push(intersect(lastLane.endLeft, lastLane.unit, rightLane.endLeft, rightLane.unit));
+                      points.push(bendPoint);
+                      points.push(intersect(lGeom.endRight, lGeom.unit, leftLane.endRight, leftLane.unit));
+                    }
                   }
                 }
+                */
               }
             }
             points.push(lGeom.endRight);
