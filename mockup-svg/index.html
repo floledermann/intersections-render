@@ -187,7 +187,8 @@ let lanePriorities = [
   // what to do with bus and tram?
 ];
 
-let testcaseIndex = +(new URLSearchParams(window.location.search.slice(1)).get("testcase"));
+//let testcaseIndex = +(new URLSearchParams(window.location.search.slice(1)).get("testcase"));
+let testcaseIndex = +(window.location.hash.substr(1));
 if (testcaseIndex < 0) testcaseIndex = testcases.length + testcaseIndex;
 let testcase = testcases[testcaseIndex];
 //testcase = testcases[testcases.length-1];
@@ -478,6 +479,7 @@ for (let [index, testcase] of testcases.entries()) {
 }
 select.addEventListener('change', function(e) {
   testcase = testcases[+select.value];
+  window.location.hash = select.value;
   init(testcase, style);
 });
 
