@@ -502,6 +502,69 @@ const testcases = [
     ],
   }, // end of testcase
   {
+    label: "4-way, car + sidewalk with offset",
+    passes: false,
+    streets: [
+      {
+        angle: -10,
+        offset: 10,
+        lanes: [
+          {
+            type: "pedestrian",
+          },          
+          {
+            type: "car",
+          },          
+          {
+            type: "pedestrian",
+          },          
+        ],
+      },
+      {
+        angle: 75,
+        lanes: [
+          {
+            type: "pedestrian",
+          },          
+          {
+            type: "car",
+          },          
+          {
+            type: "pedestrian",
+          },          
+        ],
+      },
+      {
+        angle: 190,
+        lanes: [
+          {
+            type: "pedestrian",
+          },          
+          {
+            type: "car",
+          },          
+          {
+            type: "pedestrian",
+          },          
+        ],
+      },
+      {
+        angle: 270,
+        lanes: [
+          {
+            type: "pedestrian",
+          },          
+          {
+            type: "car",
+          },          
+          {
+            type: "pedestrian",
+          },          
+        ],
+      },
+    ],
+  }, // end of testcase
+  {
     "label": "4-way, one road with many lanes",
     "streets": [
       {
@@ -597,6 +660,7 @@ const testcases = [
     streets: [
       {
         angle: -10,
+        offset: -8,
         lanes: [
           {
             type: "pedestrian",
