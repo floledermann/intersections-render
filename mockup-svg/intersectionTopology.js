@@ -104,7 +104,8 @@ export default function(streets, options) {
 
     geom.otherStreets = otherStreets;
     
-    let streetWidth = (street.offset || 0) * 10;
+    let streetWidth = 0;
+    let offset = (street.offset || 0) * 10;
     let laneCounter = 1;
 
     for (let lane of street.lanes) {
@@ -117,7 +118,7 @@ export default function(streets, options) {
         index: laneCounter-1,
         streetIndex: geom.index,
         width: laneWidth,
-        offset: streetWidth,
+        offset: offset,
         unit: geom.unit,
         normal: geom.normal,
         lane: laneWithDefaults,
@@ -128,6 +129,7 @@ export default function(streets, options) {
       });
       
       streetWidth += laneWidth;
+      offset += laneWidth;
       laneCounter++;
     }
     
