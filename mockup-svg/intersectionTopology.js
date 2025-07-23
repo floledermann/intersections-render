@@ -111,7 +111,7 @@ export default function(streets, options) {
     for (let lane of street.lanes) {
       // store basic lane geometry
       let laneWithDefaults = Object.assign({}, options.laneDefaults[lane.type], lane);
-      let laneWidth = valOrFunc(options.style.widths?.[lane.type], laneWithDefaults) || valOrFunc(options.style.defaultWidth, laneWithDefaults) || 20;
+      let laneWidth = valOrFunc(options.style[lane.type]?.width || options.style.width, laneWithDefaults) || 20;
       
       geom.lanesGeom.push({
         id: geom.id + "-lane" + laneCounter,

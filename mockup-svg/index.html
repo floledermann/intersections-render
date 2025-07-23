@@ -194,15 +194,26 @@ let testcase = testcases[testcaseIndex];
 //testcase = testcases[testcases.length-1];
 
 let style = {
-  defaultWidth: l => l.width * 10,
+  // defaults for all lane types
+  width: l => l.width * 10,
   /*
-  widths: {
-    car: 15,
-    cycle: 70,
-    pedestrian: 5,
-    "car-access": 15,
-    green: 15,
-    parking: 15,
+  car: {
+    width: 15
+  },
+  cycle: {
+    width: 70
+  },
+  pedestrian: {
+    width: 5
+  },
+  "car-access": {
+    width: 15
+  },
+  green: {
+    width: 15
+  },
+  parking: {
+    width: 15
   }
   */
 };
