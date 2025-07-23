@@ -18,10 +18,13 @@
 <ul>
 <li>expand collection of test cases</li>
 <li>construct crossings (Zebra / bicycle)</li>
+<li>connecting to buildings/greenspace/... at the edge</li>
+<li>point features in lanes (trees, traffic islands)</li>
+</ul>
+<h3>Currently outside scope</h3>
+<ul>
 <li>align streets by specific lanes</li>
 <li>what to do with bus and tram?</li>
-<li>point features in lanes (trees, traffic islands)</li>
-<li>connecting to buildings/greenspace/... at the edge</li>
 <li>mini-roundabouts?</li>
 </ul>
 <div class="fileform">
@@ -162,7 +165,7 @@ let laneTypes = {
   */
 }
 
-// extract default values into a simple dict structure
+// extract default values into a simple dict structure like { car: { width: 3, ... }, ...}
 let laneDefaults = 
   Object.fromEntries(
     Object.entries(laneTypes).map(
