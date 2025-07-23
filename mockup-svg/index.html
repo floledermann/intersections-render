@@ -196,26 +196,30 @@ let testcase = testcases[testcaseIndex];
 let style = {
   // defaults for all lane types
   width: l => l.width * 10,
-  /*
+  // width: 15,
+  color: "#dddddd",
   car: {
-    width: 15
+    //width: 15
   },
   cycle: {
-    width: 70
+    //width: 70,
+    color: "#f5c5c5"
   },
   pedestrian: {
-    width: 5
+    //width: 5,
+    color: "#cccccc"
   },
   "car-access": {
-    width: 15
+    //width: 15
   },
   green: {
-    width: 15
+    //width: 15,
+    color: "#a4dd82"
   },
   parking: {
-    width: 15
+    //width: 15,
+    color: "#eeeeff"
   }
-  */
 };
 
 let state = {};
@@ -408,6 +412,7 @@ function buildSVG(state, wrapper, update) {
       svgRender(streetsGeom, svgs[i], {
         //labels: false,
         //outlines: true,
+        style: style,
       });      
       i++;
     }
