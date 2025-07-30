@@ -491,7 +491,7 @@ document.querySelector("input.upload-json").addEventListener('change', function(
 let select = document.querySelector("select.select-json");
 for (let [index, testcase] of testcases.entries()) {
   let option = document.createElement("option");
-  option.textContent = testcase.label;
+  option.textContent = "(#" + index + ") " + testcase.label + " " + (testcase.passing ? "✔" : "✖");
   option.value = index;
   if (index == testcaseIndex) option.selected = true;
   select.appendChild(option);

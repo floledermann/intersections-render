@@ -1,6 +1,7 @@
 const testcases = [
   { // testcase
     label: "Default Testcase",
+    passing: true,
     settings: {
     },
     // global settings for entire intersection
@@ -177,6 +178,7 @@ const testcases = [
 
   {
     label: "Bend with single car lane continuing",
+    passing: true,
     streets: [
       {
         angle: -10,
@@ -199,6 +201,7 @@ const testcases = [
 
   {
     label: "Bend with single lane, changing type car -> cycle",
+    passing: false,
     streets: [
       {
         angle: -10,
@@ -222,6 +225,7 @@ const testcases = [
   { // testcase
     label: "Bend with double car lane continuing",
     comment: "Weird extension of intersection polygon for outer lane",
+    passing: true,
     streets: [
       {
         angle: -10,
@@ -250,6 +254,7 @@ const testcases = [
 
   { // testcase
     label: "Bend with two lane types, car + cycle",
+    passing: true,
     streets: [
       {
         angle: -10,
@@ -278,7 +283,7 @@ const testcases = [
 
   { // testcase
     label: "Bend with two lane types, switching sides, car + cycle",
-    passes: false,
+    passing: false,
     streets: [
       {
         angle: -10,
@@ -307,6 +312,7 @@ const testcases = [
 
   {
     label: "3-way, single car lane continuing",
+    passing: true,
     streets: [
       {
         angle: -10,
@@ -337,7 +343,7 @@ const testcases = [
 
   {
     label: "3-way, single car lane bend + cycle",
-    passes: false,
+    passing: false,
     streets: [
       {
         angle: -10,
@@ -368,6 +374,7 @@ const testcases = [
 
   {
     label: "3-way, car + cycle, cycle going off",
+    passing: true,
     streets: [
       {
         angle: -10,
@@ -404,7 +411,7 @@ const testcases = [
 
   {
     label: "3-way, car + cycle, cycle going off across",
-    passes: false,
+    passing: false,
     streets: [
       {
         angle: -10,
@@ -441,7 +448,7 @@ const testcases = [
 
   {
     label: "4-way, car + sidewalk",
-    passes: false,
+    passing: true,
     streets: [
       {
         angle: -10,
@@ -503,7 +510,7 @@ const testcases = [
   }, // end of testcase
   {
     label: "4-way, car + sidewalk with offset",
-    passes: false,
+    passing: false,
     streets: [
       {
         angle: -10,
@@ -566,6 +573,7 @@ const testcases = [
   }, // end of testcase
   {
     "label": "4-way, one road with many lanes",
+    passing: false,
     "streets": [
       {
         "angle": -10,
@@ -656,7 +664,7 @@ const testcases = [
   {
     comment: `This is to test lanes that are not directly stopped by another lane of the same priority.`,
     label: "4-way, lower-priority lanes embedded in car lanes",
-    passes: false,
+    passing: false,
     streets: [
       {
         angle: -10,
