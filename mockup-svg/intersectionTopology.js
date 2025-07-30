@@ -135,7 +135,7 @@ export default function(streets, options) {
     
     geom.width = streetWidth;
     
-    let lastLane = null;
+    let previousLane = null;
     for (let laneGeom of geom.lanesGeom) {
       // start left, check clockwise with other streets
       laneGeom.offset -= streetWidth/2;
@@ -147,13 +147,13 @@ export default function(streets, options) {
         // we can use this to sort all lanes going around the crossing
         // use lane position as fractional part added to street angle
         clockwiseOrder: geom.angle + (1-(laneGeom.offset/streetWidth)),
-        laneLeft: lastLane,
+        laneLeft: previousLane,
         laneRight: null
       });
-      if (lastLane) {
-        lastLane.laneRight = laneGeom;
+      if (previousLane) {
+        previousLane.laneRight = laneGeom;
       }
-      lastLane = laneGeom;
+      previousLane = laneGeom;
     }
     
     // wire expansion areas
@@ -204,35 +204,49 @@ function calculateLaneTopology(streetsGeom, options) {
   // clockwise and counter-clockwise order
   let streetsGeomOrder = [streetsGeomWrap, Array.from(streetsGeomWrap).reverse()];
   
-  for (let laneType of options.lanePriorities) {
-    let targetPriority = options.lanePriorities.indexOf(laneType);
-    let reverse = true;
+  for (let currentLaneType of options.lanePriorities) {
+    
+    let currentLaneTypePriority = options.lanePriorities.indexOf(currentLaneType);
+    let reverseLaneOrder = true;
+    
     for (let order of streetsGeomOrder) {
-      // last lane of current type processed
-      let lastLane = null;
+      
+      // most recent lane of current type processed
+      let previousLaneOfCurrentType = null;
+      
       // lanes that need to be passed before connecting to other lanes
       let lanesToPass = new Set();
+      
       // higher-priority lanes that potentially separate the lane from connecting
       // TODO: is this the same as lanesToPass? - I can't remember, test this ;)
       let separatingLanes = new Set();
+      
       // lanes in parallel to the current one 
       // that "shield" the lane from being stopped
       let shieldingLanes = []; 
+      
       let connectedLanes = null;
+      
       let laneStack = []; // a stack of lanes to pass
+      
       for (let streetGeom of order) {
+        
         let lanesGeom = streetGeom.lanesGeom;
-        if (reverse) lanesGeom = Array.from(lanesGeom).reverse();
+        
+        if (reverseLaneOrder) lanesGeom = Array.from(lanesGeom).reverseLaneOrder();
+        
         for (let laneGeom of lanesGeom) {
-//if (laneGeom.id == "street2-lane5" && laneGeom.priority == targetPriority && !reverse) debugger;
+          
+// adjust lane id here to break into debugger
+//if (laneGeom.id == "street2-lane5" && laneGeom.priority == currentLaneTypePriority && !reverseLaneOrder) debugger;
 
-          // higher-priority lane -> set up passing and shielding
-          if (laneGeom.priority < targetPriority) {
-            if (lastLane && lanesToPass.size == 0 && (lastLane.streetGeom != laneGeom.streetGeom)) { 
+          // current lane is higher-priority than current lane type -> set up passing and shielding
+          if (laneGeom.priority < currentLaneTypePriority) {
+            if (previousLaneOfCurrentType && lanesToPass.size == 0 && (previousLaneOfCurrentType.streetGeom != laneGeom.streetGeom)) { 
               // TODO: fix case when going around 0° (needs one more iteration "around")
-              //let index = reverse ? 0 : 1;
-              //if ((reverse && lastLane.stoppedBy.length == 0) ||
-              //    (!reverse && lastLane.stoppedBy.length == 1)) {
+              //let index = reverseLaneOrder ? 0 : 1;
+              //if ((reverseLaneOrder && previousLaneOfCurrentType.stoppedBy.length == 0) ||
+              //    (!reverseLaneOrder && previousLaneOfCurrentType.stoppedBy.length == 1)) {
               
                 // for now, just use the first lane we encounter
                 // in a crossing street as the stopping lane, 
@@ -241,12 +255,12 @@ function calculateLaneTopology(streetsGeom, options) {
                 
                 // only if the other lane is not stopped by one of our shielding lanes
                 if (!laneGeom.stoppedBy.some(l => shieldingLanes.includes(l))) {
-                  lastLane.stoppedBy.push(laneGeom);
+                  previousLaneOfCurrentType.stoppedBy.push(laneGeom);
                 }
               //}
             }
             // higher-priority lanes in parallel might shield the lane from being stopped
-            if (lastLane && lastLane.streetGeom == laneGeom.streetGeom) {
+            if (previousLaneOfCurrentType && previousLaneOfCurrentType.streetGeom == laneGeom.streetGeom) {
               shieldingLanes.push(laneGeom);
             }
             // shielding lanes stopped by current lane? -> remove
@@ -275,38 +289,38 @@ function calculateLaneTopology(streetsGeom, options) {
             if (separatingLanes.has(laneGeom)) {
               separatingLanes.delete(laneGeom);
               if (separatingLanes.size == 0) {
-                ({lastLane, lanesToPass, separatingLanes} = laneStack.pop());
+                ({previousLaneOfCurrentType, lanesToPass, separatingLanes} = laneStack.pop());
               }
             }
           }
-          // same or lower priority lane
+          // current lane is same or lower priority than current lane type
           else {
-            // same priority
-            if (laneGeom.lane.type == laneType) {
+            // same lane type (= same priority)
+            if (laneGeom.lane.type == currentLaneType) {
               if (lanesToPass.size > 0) {
                 // still lanes to clear, so push on stack and start new connected lanes
-                laneStack.push({lastLane, lanesToPass, separatingLanes});
+                laneStack.push({previousLaneOfCurrentType, lanesToPass, separatingLanes});
                 separatingLanes = new Set(lanesToPass);
                 lanesToPass = new Set();
-                lastLane = null;
+                previousLaneOfCurrentType = null;
                 connectedLanes = null;
               }
               // if connected lanes have already been found on reverse pass
               // add to those
               if (!connectedLanes) {
-                connectedLanes = lastLane?.connectedLanes || laneGeom.connectedLanes;
+                connectedLanes = previousLaneOfCurrentType?.connectedLanes || laneGeom.connectedLanes;
               }
               if (!connectedLanes.has(laneGeom)) {
                 connectedLanes.add(laneGeom);
               }
               laneGeom.connectedLanes = connectedLanes;
               shieldingLanes = [];
-              lastLane = laneGeom;
+              previousLaneOfCurrentType = laneGeom;
             }
           }
         }
       }
-      reverse = false;
+      reverseLaneOrder = false;
     }
   }
   
