@@ -233,7 +233,7 @@ function calculateLaneTopology(streetsGeom, options) {
         
         let lanesGeom = streetGeom.lanesGeom;
         
-        if (reverseLaneOrder) lanesGeom = Array.from(lanesGeom).reverseLaneOrder();
+        if (reverseLaneOrder) lanesGeom = Array.from(lanesGeom).reverse();
         
         for (let laneGeom of lanesGeom) {
           
