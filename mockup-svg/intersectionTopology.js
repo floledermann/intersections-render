@@ -209,6 +209,7 @@ function calculateLaneTopology(streetsGeom, options) {
     let currentLaneTypePriority = options.lanePriorities.indexOf(currentLaneType);
     let reverseLaneOrder = true;
     
+    // clockwise and counter-clockwise
     for (let order of streetsGeomOrder) {
       
       // most recent lane of current type processed
@@ -298,7 +299,8 @@ function calculateLaneTopology(streetsGeom, options) {
             // same lane type (= same priority)
             if (laneGeom.lane.type == currentLaneType) {
               if (lanesToPass.size > 0) {
-                // still lanes to clear, so push on stack and start new connected lanes
+                // still lanes to clear
+                // push on stack and start new connected lanes
                 laneStack.push({previousLaneOfCurrentType, lanesToPass, separatingLanes});
                 separatingLanes = new Set(lanesToPass);
                 lanesToPass = new Set();

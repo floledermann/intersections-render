@@ -28,7 +28,6 @@ export default function(streetsGeom, options) {
       if (connectedLanes.length == 0 || laneGeom.stoppedBy.length > 0) {
         // lane ends
         // find stop lane that actually stops the lane
-        //laneGeom.connectedLanes = [];
         if (laneGeom.stoppedBy.length > 0) {
           let stopLanes = laneGeom.stoppedBy.map(otherLane => ({
             lane: otherLane,
