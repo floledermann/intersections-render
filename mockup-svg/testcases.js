@@ -23,6 +23,7 @@ const testcases = [
           {
             type: "pedestrian",
             curb: true,
+            crossing: true,
             boundary: "building",
           },
           {
@@ -56,6 +57,7 @@ const testcases = [
           {
             type: "pedestrian",
             curb: true,
+            crossing: true,
             boundary: "building",
           },
         ],
@@ -66,6 +68,7 @@ const testcases = [
           {
             type: "pedestrian",
             curb: true,
+            crossing: true,
             boundary: "building",
             curbHeight: 15,
           },/*
@@ -100,6 +103,7 @@ const testcases = [
           {
             type: "pedestrian",
             curb: true,
+            crossing: true,
             boundary: "building",
             curbHeight: 0.15,
           },
@@ -111,6 +115,7 @@ const testcases = [
           {
             type: "pedestrian",
             curb: true,
+            crossing: true,
             boundary: "building",
             curbHeight: 0.15,
           },
@@ -118,7 +123,8 @@ const testcases = [
             type: "cycle",
             curb: true,
             color: "red",
-            oneway: false
+            oneway: false,
+            continuation: true
           },
           {
             type: "car",
@@ -134,6 +140,7 @@ const testcases = [
           {
             type: "pedestrian",
             curb: true,
+            crossing: true,
             boundary: "building",
             curbHeight: 0.15,
           },
@@ -145,6 +152,7 @@ const testcases = [
           {
             type: "pedestrian",
             curb: true,
+            crossing: true,
             boundary: "building",
             curbHeight: 0.15,
           },
@@ -163,11 +171,13 @@ const testcases = [
             type: "cycle",
             curb: true,
             color: "red",
-            oneway: false
+            oneway: false,
+            continuation: true
           },
           {
             type: "pedestrian",
             curb: true,
+            crossing: true,
             boundary: "building",
             curbHeight: 0.15,
           },
