@@ -70,6 +70,8 @@ export default function(streets, options) {
   //   - relative street angles
   //   - angle classification (left, stright, right, invalid)
   //   - lane y' position
+  
+  let continuationCrossings = {};
 
   for (let geom of streetsGeom) {
     let street = geom.street;
@@ -107,11 +109,35 @@ export default function(streets, options) {
     let streetWidth = 0;
     let offset = (street.offset || 0) * 10;
     let laneCounter = 1;
+    
+    // crossings are only across this street, so store in streetGeom
+    geom.crossings = {};
 
     for (let lane of street.lanes) {
       // store basic lane geometry
       let laneWithDefaults = Object.assign({}, options.laneDefaults[lane.type], lane);
       let laneWidth = valOrFunc(options.style[lane.type]?.width || options.style.width, laneWithDefaults) || 20;
+      
+      // store continuation crossing (globally)
+      if (lane.continuation) {
+        if (!continuationCrossings[lane.continuation]) {
+          continuationCrossings[lane.continuation] = new Set([lane]);
+        }
+        else {
+          continuationCrossings[lane.continuation].add(lane);
+        }
+      }
+
+      // store normal crossing (only local for current street
+      if (lane.crossing) {
+        if (!geom.crossings[lane.type]) geom.crossings[lane.type] = {};
+        if (!geom.crossings[lane.type][lane.crossing]) {
+          geom.crossings[lane.type][lane.crossing] = new Set([lane]);
+        }
+        else {
+          geom.crossings[lane.type][lane.crossing].add(lane);
+        }
+      }
       
       geom.lanesGeom.push({
         id: geom.id + "-lane" + laneCounter,
